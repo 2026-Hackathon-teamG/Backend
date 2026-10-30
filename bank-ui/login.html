@@ -32,6 +32,19 @@
           <a href="/">메인으로</a>
         </div>
       </form>
+
+      <form class="login-form" id="verifyForm" hidden>
+        <h1>추가 인증</h1>
+        <p>처음 보는 기기에서 로그인했습니다. 등록된 휴대폰으로 받은 인증 코드 6자리를 입력하세요.</p>
+        <p class="form-error" id="verifyError" role="alert" hidden>인증 코드가 올바르지 않습니다.</p>
+        <label class="field">인증 코드
+          <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+        </label>
+        <button class="btn btn-primary" type="submit">확인</button>
+        <div class="login-links">
+          <button class="link-btn" type="button" id="verifyBack">다른 계정으로 로그인</button>
+        </div>
+      </form>
     </section>
   </main>
   <script type="module" src="/src/main.ts"></script>

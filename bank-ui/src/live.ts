@@ -15,6 +15,14 @@ export function createLiveBackend(): Backend {
   return {
     async login(username, password) {
       const res = await post('/api/v1/login', { username, password });
+      if (res.status === 401) return 'fail';
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // 비밀번호가 맞아도 처음 보는 기기면 200 + step_up_required (R5 추가 인증, 백엔드 STEPUP_ENABLED=1일 때)
+      const body = (await res.json()) as { step_up_required?: boolean };
+      return body.step_up_required ? 'step_up' : 'ok';
+    },
+    async verify(code) {
+      const res = await post('/api/v1/login/verify', { code });
       if (res.status === 401) return false;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return true;

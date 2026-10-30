@@ -24,12 +24,13 @@ const ACCOUNT = {
 };
 
 function createBackend(): Backend {
-  const mock = createMockBackend();
+  const mock = createMockBackend(config.mockStepUp);
   if (config.mode === 'mock') return mock;
   const live = createLiveBackend();
   if (config.mode === 'live') return live;
   return {
     login: (username, password) => live.login(username, password).catch(() => mock.login(username, password)),
+    verify: (code) => live.verify(code).catch(() => mock.verify(code)),
     chat: (message) => live.chat(message).catch(() => mock.chat(message)),
   };
 }
@@ -48,15 +49,43 @@ function setupHeader(): void {
 function setupLogin(): void {
   const form = $<HTMLFormElement>('loginForm');
   const error = $('loginError');
+  const verifyForm = $<HTMLFormElement>('verifyForm');
+  const verifyError = $('verifyError');
+  let pendingUser = '';
+
+  const done = (username: string) => {
+    sessionStorage.setItem(USER_KEY, username);
+    location.href = '/account.html';
+  };
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const data = new FormData(form);
     const username = String(data.get('username'));
-    const ok = await backend.login(username, String(data.get('password'))).catch(() => false);
-    error.hidden = ok;
-    if (!ok) return;
-    sessionStorage.setItem(USER_KEY, username);
-    location.href = '/account.html';
+    const result = await backend.login(username, String(data.get('password'))).catch(() => 'fail' as const);
+    error.hidden = result !== 'fail';
+    if (result === 'ok') return done(username);
+    if (result === 'step_up') {
+      // 처음 보는 기기: 비밀번호는 맞았지만 인증 코드를 받아야 로그인이 끝남
+      pendingUser = username;
+      form.hidden = true;
+      verifyForm.hidden = false;
+      verifyForm.querySelector('input')?.focus();
+    }
+  });
+
+  verifyForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const code = String(new FormData(verifyForm).get('code')).trim();
+    const ok = await backend.verify(code).catch(() => false);
+    verifyError.hidden = ok;
+    if (ok) done(pendingUser);
+  });
+
+  $('verifyBack').addEventListener('click', () => {
+    verifyForm.hidden = true;
+    verifyError.hidden = true;
+    form.hidden = false;
   });
 }
 
