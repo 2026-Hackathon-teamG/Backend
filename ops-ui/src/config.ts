@@ -2,7 +2,7 @@
  * 실행 설정
  * 우선순위: URL 파라미터 > .env(.local) 의 VITE_* > 기본값
  *   ?mode=mock                       백엔드 없이 목업 재생
- *   ?mode=live&api=http://192.168.0.10:8000
+ *   ?mode=live&api=http://192.168.0.10:8002
  */
 export type DataMode = 'auto' | 'live' | 'mock';
 

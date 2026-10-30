@@ -15,7 +15,7 @@ npm run dev        # http://localhost:5173  (같은 Wi-Fi의 다른 PC는 http:/
 
 | 명령 | 설명 |
 |---|---|
-| `npm run dev` | 개발 서버. 저장하면 바로 반영. `/api` 요청은 백엔드(기본 `localhost:8000`)로 프록시 |
+| `npm run dev` | 개발 서버. 저장하면 바로 반영. `/api` 요청은 detector(기본 `localhost:8002`)로 프록시 |
 | `npm run build` | 타입 검사 후 `dist/`에 배포용 파일 생성 |
 | `npm run preview` | `dist/`를 미리보기 (http://localhost:4173) |
 | `npm run typecheck` | 타입 검사만 |
@@ -23,19 +23,24 @@ npm run dev        # http://localhost:5173  (같은 Wi-Fi의 다른 PC는 http:/
 
 > `dist/index.html`은 더블클릭(file://)으로 열면 동작하지 않습니다. `npm run preview`나 백엔드 서버로 여세요.
 
+### Docker (백엔드 compose)
+
+백엔드 레포의 `docker compose up --build`가 이 폴더를 빌드해 http://localhost:8003 으로 띄웁니다. 직접 빌드하려면 `docker build -t ops-ui . && docker run -p 8003:8003 ops-ui`.
+nginx가 `/api/`를 `detector:8002`로 넘기므로, detector에 `/api/state`가 생기면 그대로 LIVE로 붙고 없으면 목업으로 돕니다. `/healthz`는 compose 헬스체크용입니다.
+
 ## 설정
 
 `.env.example`을 `.env.local`로 복사해 바꿉니다 (`.env.local`은 git에 안 올라감).
 
 | 변수 | 기본값 | 설명 |
 |---|---|---|
-| `API_PROXY_TARGET` | `http://localhost:8000` | dev·preview가 `/api`를 넘길 백엔드 주소 |
+| `API_PROXY_TARGET` | `http://localhost:8002` | dev·preview가 `/api`를 넘길 백엔드(detector) 주소 |
 | `VITE_DATA_MODE` | `auto` | `auto`(백엔드 시도 → 실패 시 목업) / `live` / `mock` |
 | `VITE_API_BASE` | (비움) | 빌드본을 백엔드와 다른 주소에서 띄울 때만 |
 | `VITE_POLL_MS` | `1000` | 폴링 간격 |
 | `VITE_MOCK_STEP_MS` | `900` | 목업 재생 속도 (발표용이면 1500 추천) |
 
-URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http://192.168.0.10:8000`, `?speed=1500`
+URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http://192.168.0.10:8002`, `?speed=1500`
 
 ## 시나리오 재생 (MOCK)
 
@@ -55,7 +60,7 @@ URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http:/
 
 ## 백엔드 연동
 
-프론트는 두 엔드포인트만 씁니다.
+프론트는 두 엔드포인트만 씁니다. **아직 백엔드(detector)에 없습니다.** 생기기 전까지는 목업으로 돕니다.
 
 - `GET /api/state` → **`src/types.ts`의 `DashboardState`** 모양 (예시: `stub/sample-state.json`, `stub/sample-state-round4-decoy.json`)
 - `POST /api/control` ← `{"action": "play" | "next" | "next_round" | "end" | "reset"}`
@@ -63,10 +68,10 @@ URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http:/
 연동 테스트용 스텁:
 ```bash
 pip install fastapi uvicorn
-cd stub && uvicorn server_stub:app --host 0.0.0.0 --port 8000
+cd stub && uvicorn server_stub:app --host 0.0.0.0 --port 8002   # detector가 꺼져 있을 때
 # 다른 터미널에서 npm run dev → LIVE 배지 확인
 ```
-`npm run build` 후 스텁을 켜면 `http://localhost:8000/`에서 빌드본도 같이 서빙합니다.
+`npm run build` 후 스텁을 켜면 `http://localhost:8002/`에서 빌드본도 같이 서빙합니다.
 
 ### 판정 기준 (백엔드와 맞출 것)
 - **breach_kind:**
