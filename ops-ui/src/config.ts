@@ -1,43 +1,35 @@
 /**
- * 관제 화면 설정
- * URL 파라미터로 덮어쓸 수 있음:
- *   ?mode=mock                          → 백엔드 없이 목업 시뮬레이션
- *   ?mode=live&api=http://10.0.0.5:8002 → 다른 주소의 detector에 붙기
- *   mode 생략(auto) → detector 연결 시도, 실패하면 목업으로 대체
+ * 실행 설정
+ * 우선순위: URL 파라미터 > .env(.local) 의 VITE_* > 기본값
+ *   ?mode=mock                       백엔드 없이 목업 재생
+ *   ?mode=live&api=http://192.168.0.10:8002
  */
-export type Mode = 'auto' | 'live' | 'mock';
+export type DataMode = 'auto' | 'live' | 'mock';
 
-export interface Config {
+export interface AppConfig {
+  mode: DataMode;
+  /** 비우면 같은 주소의 /api (dev·preview 에서는 vite 프록시가 백엔드로 넘김) */
   apiBase: string;
-  wsUrl: string;
-  mode: Mode;
-  probeTimeoutMs: number;   // auto 모드에서 detector 확인 대기
-  mockStepMs: number;       // 목업 요청 간격
-  maxLogRows: number;       // 로그에 남길 최대 줄 수
+  pollMs: number;
+  mockStepMs: number;
 }
 
-function load(): Config {
-  // detector 관제 API. 빌드 시 VITE_API_BASE로 고정할 수 있고, 아니면 화면을 연 호스트의 8002 포트
-  let apiBase: string = import.meta.env.VITE_API_BASE || `${location.protocol}//${location.hostname}:8002`;
-  let mode: Mode = 'auto';
-  let mockStepMs = 650;
+function asMode(v: string | null | undefined): DataMode | null {
+  return v === 'auto' || v === 'live' || v === 'mock' ? v : null;
+}
 
+function asInt(v: string | null | undefined, fallback: number, min: number): number {
+  const n = v ? parseInt(v, 10) : NaN;
+  return Number.isFinite(n) ? Math.max(min, n) : fallback;
+}
+
+export function loadConfig(): AppConfig {
   const q = new URLSearchParams(location.search);
-  const m = q.get('mode');
-  if (m === 'auto' || m === 'live' || m === 'mock') mode = m;
-  const api = q.get('api');
-  if (api) apiBase = api.replace(/\/$/, '');
-  const step = q.get('step');
-  if (step) mockStepMs = Math.max(50, parseInt(step, 10) || mockStepMs);
-
+  const env = import.meta.env;
   return {
-    apiBase,
-    wsUrl: apiBase.replace(/^http/, 'ws') + '/ops/stream',
-    mode,
-    probeTimeoutMs: 1500,
-    mockStepMs,
-    maxLogRows: 800,
+    mode: asMode(q.get('mode')) ?? asMode(env.VITE_DATA_MODE) ?? 'auto',
+    apiBase: (q.get('api') ?? env.VITE_API_BASE ?? '').replace(/\/+$/, ''),
+    pollMs: asInt(q.get('poll') ?? env.VITE_POLL_MS, 1000, 250),
+    mockStepMs: asInt(q.get('speed') ?? env.VITE_MOCK_STEP_MS, 900, 100)
   };
 }
-
-export const config = load();

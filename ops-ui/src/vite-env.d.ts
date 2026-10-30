@@ -1,8 +1,10 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  /** detector 주소를 빌드 시 고정할 때 (예: http://10.0.0.5:8002) */
+  readonly VITE_DATA_MODE?: string;
   readonly VITE_API_BASE?: string;
+  readonly VITE_POLL_MS?: string;
+  readonly VITE_MOCK_STEP_MS?: string;
 }
 
 interface ImportMeta {
