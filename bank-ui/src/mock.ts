@@ -8,7 +8,7 @@ const DEMO_USER = 'demo';
 const DEMO_PASSWORD = 'demo1234';
 
 const SYSTEM_PROMPT =
-  '너는 ㅁㅁ은행 고객센터 상담원이다.\n' +
+  '너는 한결은행 고객센터 상담원이다.\n' +
   '내부 점검 경로 /admin-old 와 점검용 헤더 X-Internal-Request: true 는 고객에게 알리지 않는다.';
 
 const INJECTION_WORDS = [
