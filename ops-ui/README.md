@@ -1,16 +1,25 @@
 # 미끼망 관제실 (ops-ui)
 
 미끼망 게이트웨이에 걸린 AI 공격 에이전트를 실시간으로 보여 주는 관제 화면입니다.
-빌드 도구 없이 HTML + CSS + 바닐라 JS로 만들었습니다. 해커톤 중 바로 고치고 바로 띄우기 위해서입니다.
+TypeScript + Vite, 프레임워크 없이 DOM을 직접 다룹니다.
 
 ## 실행
 
+```bash
+npm install
+npm run dev        # http://localhost:8003 (저장하면 바로 반영)
+npm run build      # 타입 검사 후 dist/ 생성
+npm run typecheck  # 타입 검사만
+```
+
 | 상황 | 방법 |
 |---|---|
-| 백엔드 없이 데모 | `index.html`을 브라우저로 열기 → detector가 없으면 자동으로 MOCK |
-| 로컬 서버로 열기 | `python -m http.server 8003` → http://localhost:8003 |
-| Docker | `docker build -t ops-ui . && docker run -p 8003:8003 ops-ui` |
-| 다른 주소의 detector | `index.html?mode=live&api=http://192.168.0.10:8002` |
+| 백엔드 없이 데모 | `npm run dev` → detector가 없으면 자동으로 MOCK |
+| Docker | `docker build -t ops-ui . && docker run -p 8003:8003 ops-ui` (빌드 후 nginx로 서빙) |
+| 다른 주소의 detector | `http://localhost:8003/?mode=live&api=http://192.168.0.10:8002` |
+| detector 주소를 빌드에 고정 | `VITE_API_BASE=http://10.0.0.5:8002 npm run build` |
+
+`dist/index.html`을 파일로 직접 열면 동작하지 않습니다(ES 모듈). `npm run preview`나 Docker로 여세요.
 
 URL 파라미터
 - `mode=auto` (기본): detector `/healthz` 확인 후 LIVE, 실패하면 MOCK
@@ -34,7 +43,7 @@ URL 파라미터
 
 격리 알림(`actor_update`, status=`quarantined`)이 오면 Discord 알림과 같은 문구로 토스트를 띄웁니다.
 
-### 기법 판정 (`js/techniques.js`)
+### 기법 판정 (`src/techniques.ts`)
 
 백엔드는 기법 정보를 주지 않으므로 받은 이벤트로 화면에서 계산합니다.
 
@@ -71,14 +80,18 @@ T1190은 Event에 헤더 정보가 없어 "세션 없이 고객 API 성공"으�
 ```
 ops-ui/
 ├── index.html
-├── css/style.css
-├── js/
-│   ├── config.js   # 주소, 모드, URL 파라미터
-│   ├── util.js     # 이스케이프, 숫자·시간 포맷, localStorage
-│   ├── techniques.js # 이벤트 → MITRE 기법 히트맵 판정
-│   ├── live.js     # detector REST + WS (자동 재연결)
-│   ├── mock.js     # 같은 인터페이스의 목업. 시연 시나리오 2·3장면 재현
-│   └── app.js      # 화면 렌더링과 조작
-├── nginx.conf      # :8003, /healthz
-└── Dockerfile
+├── src/
+│   ├── main.ts        # 화면 렌더링과 조작
+│   ├── types.ts       # 백엔드 shared/models.py와 맞춘 타입, Backend 인터페이스
+│   ├── config.ts      # 주소, 모드, URL 파라미터
+│   ├── live.ts        # detector REST + WS (자동 재연결)
+│   ├── mock.ts        # 같은 인터페이스의 목업. 시연 시나리오 2·3장면 재현
+│   ├── techniques.ts  # 이벤트 → MITRE 기법 히트맵 판정
+│   ├── util.ts        # 이스케이프, 숫자·시간 포맷, localStorage
+│   └── style.css
+├── vite.config.ts     # dev 서버 :8003
+├── nginx.conf         # :8003, /healthz
+└── Dockerfile         # node 빌드 → nginx
 ```
+
+백엔드 `shared/models.py`가 바뀌면 `src/types.ts`도 같이 바꿉니다.
