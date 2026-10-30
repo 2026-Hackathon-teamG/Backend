@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>로그인 | 한결은행</title>
+</head>
+<body data-page="login">
+  <!-- @header -->
+
+  <main class="login">
+    <section class="login-side">
+      <div class="stamp"><!-- @seal --></div>
+      <p>맡긴 돈은<br>제자리에.</p>
+    </section>
+
+    <section class="login-main">
+      <form class="login-form" id="loginForm">
+        <h1>인터넷뱅킹 로그인</h1>
+        <p>시연용 계정으로 접속하세요.</p>
+        <p class="form-error" id="loginError" role="alert" hidden>아이디 또는 비밀번호가 맞지 않습니다.</p>
+        <label class="field">아이디
+          <input type="text" name="username" autocomplete="off" required>
+        </label>
+        <label class="field">비밀번호
+          <input type="password" name="password" autocomplete="off" required>
+        </label>
+        <button class="btn btn-primary" type="submit">로그인</button>
+        <div class="login-links">
+          <a href="/support.html">비밀번호 찾기</a>
+          <a href="/">메인으로</a>
+        </div>
+      </form>
+    </section>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

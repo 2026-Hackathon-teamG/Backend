@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>내 계좌 | 한결은행</title>
+</head>
+<body class="soft" data-page="account">
+  <!-- @header -->
+
+  <main class="panel">
+    <h1>내 계좌</h1>
+    <section class="balance">
+      <span id="accountNo"></span>
+      <b id="balance"></b>
+    </section>
+
+    <section class="tx-card">
+      <h2>최근 거래</h2>
+      <table class="tx">
+        <thead><tr><th scope="col">날짜</th><th scope="col">내용</th><th scope="col">금액</th></tr></thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </section>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
