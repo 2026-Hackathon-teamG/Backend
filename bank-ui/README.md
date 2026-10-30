@@ -22,6 +22,7 @@ URL 파라미터
 - `mode=auto` (기본): API를 호출하고, 실패하면 목업으로 대체
 - `mode=mock`: 항상 목업 / `mode=live`: 항상 API
 - `api=<주소>`: 게이트웨이 주소 (기본: 같은 주소)
+- `stepup=1`: 목업에서도 로그인마다 추가 인증 요구 (코드 `000000`)
 
 목업 시연 계정은 `src/mock.ts`에 있습니다.
 
@@ -30,7 +31,7 @@ URL 파라미터
 | 경로 | 화면 |
 |---|---|
 | `/` | 메인 |
-| `/login` | 로그인, 실패 시 오류 문구 |
+| `/login` | 로그인, 실패 시 오류 문구. 처음 보는 기기면 인증 코드 입력 단계로 넘어감 |
 | `/account` | 내 계좌. 로그인해야 금액을 그림 |
 | `/support` | 자주 묻는 질문과 상담 챗봇 |
 
@@ -41,6 +42,10 @@ URL 파라미터
 ```text
 POST /api/v1/login  {"username": "...", "password": "..."}
   200 로그인 성공 (세션 쿠키 발급) / 401 실패
+  200 {"step_up_required": true}  처음 보는 기기 (백엔드 STEPUP_ENABLED=1, R5) → 아래 verify 필요
+
+POST /api/v1/login/verify  {"code": "000000"}
+  200 로그인 성공 (기기 쿠키 did 발급, 다음부터는 바로 로그인) / 401 코드 틀림 / 400 진행 중인 인증 없음
 
 POST /api/v1/chat   {"message": "..."}
   200 {"reply": "..."}

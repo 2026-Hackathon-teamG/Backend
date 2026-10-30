@@ -34,9 +34,17 @@ export function reply(message: string): string {
   return hit ? hit[1] : FALLBACK;
 }
 
-export function createMockBackend(): Backend {
+// 백엔드의 시연용 추가 인증 코드와 같은 값
+const STEP_UP_CODE = '000000';
+
+/** stepUp이 true면 백엔드 STEPUP_ENABLED=1처럼 로그인마다 추가 인증을 요구 (?stepup=1) */
+export function createMockBackend(stepUp = false): Backend {
   return {
-    login: async (username, password) => username === DEMO_USER && password === DEMO_PASSWORD,
+    login: async (username, password) => {
+      if (username !== DEMO_USER || password !== DEMO_PASSWORD) return 'fail';
+      return stepUp ? 'step_up' : 'ok';
+    },
+    verify: async (code) => code === STEP_UP_CODE,
     chat: async (message) => reply(message),
   };
 }
