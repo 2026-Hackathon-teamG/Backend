@@ -12,9 +12,16 @@
     "sample": "tsx scripts/export-sample.ts"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.16",
     "@types/node": "^22.10.0",
+    "@types/topojson-client": "^3.1.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "globe.gl": "^2.46.2",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   }
 }

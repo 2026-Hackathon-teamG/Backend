@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
     base: './', // dist를 어느 경로(FastAPI StaticFiles 등)에 올려도 동작
     server: { host: true, port: 5173, proxy },   // host: true → 같은 Wi-Fi의 다른 PC에서도 접속 가능
     preview: { host: true, port: 4173, proxy },
-    build: { outDir: 'dist', sourcemap: true }
+    // globe.gl(three.js)은 지구본을 그릴 때만 따로 불러오는 청크라 크기 경고 기준을 올린다
+    build: { outDir: 'dist', sourcemap: true, chunkSizeWarningLimit: 2000 }
   };
 });

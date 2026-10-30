@@ -73,6 +73,28 @@
     </article>
   </section>
 
+  <!-- 2-1. 공격 출발지 지구본 -->
+  <section class="win" aria-labelledby="gbTitle">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title" id="gbTitle">attack.origins</span>
+      <span class="win-meta" id="gbMeta">—</span>
+    </div>
+    <div class="globe-row">
+      <div class="globe" id="globe" role="img" aria-label="공격 출발지에서 공격 대상 서버로 이어지는 3D 지구본"></div>
+      <div class="win-body origins-side">
+        <p class="hint">출발지에서 <b>공격 대상 서버</b>로 호를 그립니다. 드래그해서 돌려 보고, 호나 점에 마우스를 올리면 주체·IP가 보입니다.</p>
+        <div class="legend">
+          <span><i class="sw breach"></i>공격</span>
+          <span><i class="sw recon"></i>정찰</span>
+          <span><i class="sw defended"></i>차단 검증</span>
+          <span><i class="sw untested"></i>지난 라운드</span>
+        </div>
+        <div id="origins"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- 3. 히트맵 + 기법별 표 -->
   <div class="row">
     <section class="win grow" aria-labelledby="hmTitle">

@@ -2,6 +2,7 @@
 import type { DataSource } from '../api';
 import type { ControlAction, DashboardState } from '../types';
 import { renderActors } from './actors';
+import { renderGlobe } from './globe';
 import { renderConsole, renderKpis, setConn } from './header';
 import { renderRounds, renderRules } from './rulesRounds';
 import { $, type Filter, view } from './shared';
@@ -14,6 +15,7 @@ export function render(s: DashboardState): void {
   view.state = s;
   renderConsole(s);
   renderKpis(s);
+  renderGlobe(s);
   renderTechniques(s);
   renderActors(s);
   renderTimeline(s);

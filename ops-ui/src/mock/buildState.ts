@@ -164,7 +164,7 @@ export function buildState(step: number): DashboardState {
     events: shown.map((e, i) => ({
       seq: i + 1, time: e.time, round: e.round, side: e.side, type: e.type,
       actor_id: e.actor_id ?? null, technique: e.technique ?? null, breach_kind: e.breach_kind ?? null,
-      src_ip: e.src_ip ?? null, request: e.request ?? null, status: e.status ?? null,
+      src_ip: e.src_ip ?? null, src_geo: e.src_geo ?? null, request: e.request ?? null, status: e.status ?? null,
       thought: e.thought ?? null, message: e.message ?? null
     })),
     rounds: roundList
