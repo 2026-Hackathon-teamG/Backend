@@ -65,8 +65,10 @@ URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http:/
 - `GET /api/state` → **`src/types.ts`의 `DashboardState`** 모양 (예시: `stub/sample-state.json`, `stub/sample-state-round4-decoy.json`)
 - `POST /api/control` ← `{"action": "play" | "next" | "next_round" | "end" | "reset"}`
 - 지구본(`attack.origins`)은 선택 필드로 그립니다. 없으면 빈 지구본에 안내 문구만 나옵니다.
-  - `events[].src_geo`: `[{"lat", "lon", "city"?, "country"?}]` 출발지 목록 (IP 위치 조회 결과, 프록시 여러 개면 여러 개)
-  - `scenario.target_geo`: 공격 대상 서버 위치 (없으면 서울)
+  - `events[].src_geo`: `[{"lat", "lon", "city"?, "country"?}]` 출발지 목록 (프록시 여러 개면 여러 개). 없으면 `src_ip`를 해시해 가상 도시에 두고 화면에 가상이라고 표시
+  - `events[].dest`: `"real"`(실서비스) | `"decoy"`(미끼망). 없으면 `decoy_hit`만 미끼망
+  - `scenario.target_geo` / `scenario.decoy_geo`: 실서비스 / 미끼망 위치 (없으면 서울 / 제주)
+  - 같은 공격자의 출발지끼리 점선으로 잇습니다. 격리됐거나 유사도 0.85 이상이면 진하게(확정), 아니면 흐리게(추정)
 
 연동 테스트용 스텁:
 ```bash
