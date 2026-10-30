@@ -1,98 +1,154 @@
 /**
- * 백엔드 shared/models.py와 detector 관제 API 응답의 타입.
- * 백엔드 모델이 바뀌면 여기도 같이 바꿉니다.
+ * 백엔드와의 계약: GET /api/state 응답 타입
+ * 백엔드 팀원은 이 파일과 stub/sample-state.json 을 기준으로 응답을 만들면 된다.
+ * `?` 가 붙은 필드는 선택이며, 없어도 화면이 깨지지 않는다.
  */
 
-export type DecoyId = 'robots' | 'admin_legacy' | 'docs_bait' | 'endless_export';
-export type ActorStatus = 'watching' | 'quarantined' | 'released';
-export type Confidence = '확정' | '추정';
-export type RunMode = 'live' | 'replay';
-export type ConnStatus = 'connecting' | 'live' | 'mock' | 'down';
+export type Phase = 'idle' | 'attack' | 'breach' | 'rule_generated' | 'rule_applied' | 'verified' | 'done';
+export type RiskLevel = 'CRITICAL' | 'MEDIUM' | 'LOW' | 'SECURE';
+export type TechState = 'breach' | 'near' | 'defended' | 'untested';
+export type TacticId = 'recon' | 'credential' | 'evasion' | 'post';
+/** session: 세션 획득 / enumeration: 계정 존재 식별 / mfa: MFA 승인 받음 / data: 실제 데이터 수집 */
+export type BreachKind = 'session' | 'enumeration' | 'mfa' | 'data';
+export type Side = 'red' | 'blue' | 'system';
+export type EventType =
+  | 'recon' | 'attack' | 'decoy_hit' | 'cluster' | 'breach'
+  | 'analysis' | 'rule_applied' | 'verify' | 'end';
+export type RuleStatus = 'generated' | 'applied' | 'verified';
+export type RoundStatus = 'pending' | 'running' | 'verified';
+export type ActorRole = 'attack' | 'recon';
+export type ActorStatus = 'observing' | 'isolated';
+export type ControlAction = 'play' | 'next' | 'next_round' | 'end' | 'reset';
 
-/** shared.models.Event */
-export interface OpsEvent {
+export interface Scenario {
   id: string;
-  ts: string;                     // ISO 8601
-  ip: string;
-  method: string;
-  path: string;                   // 쿼리 포함
-  status: number;
-  session_id: string | null;
-  ua: string | null;
-  header_hash: string;
-  decoy_id: DecoyId | null;
-  token: string | null;
-  actor_id: string | null;
-  routed_to: 'bank' | 'decoy';
-  records_out: number;
-  agent_note: string | null;      // "__END__"이면 실행 종료
-  internal_header?: boolean;      // X-Internal-Request 헤더 포함 여부. 이전 백엔드에는 없음
+  title?: string;
+  target?: string;
 }
 
-/** GET /ops/actors 행 */
+export interface Kpi {
+  /** 공격 + 재공격 검증 */
+  total_attempts: number;
+  attack_attempts: number;
+  /** 침투 판정 건수 (종류 무관) */
+  breaches: number;
+  breach_by_kind?: Partial<Record<BreachKind, number>>;
+  /** 탈취된 서로 다른 계정 수 */
+  accounts_compromised?: number;
+  /** breaches / attack_attempts × 100 */
+  breach_rate: number;
+  rules_applied: number;
+  reattack_total: number;
+  reattack_blocked: number;
+  actors?: number;
+  actors_isolated?: number;
+}
+
+export interface Tactic {
+  id: TacticId | string;
+  name: string;
+}
+
+export interface Technique {
+  id: string;
+  tactic?: TacticId | string;
+  name: string;
+  name_ko?: string;
+  state: TechState;
+  /** 1.0 침투 성공, 0.8~0.99 부분 성공, 0.5 시도 중 실패, 0 재공격 모두 차단, null 미테스트 */
+  fitness: number | null;
+  fitness_peak?: number;
+  attempts: number;
+  blocked: number;
+  partial: number;
+  breached: number;
+  rule_id?: string | null;
+  note?: string;
+  detail?: { how?: string; why?: string; rule?: string | null };
+}
+
 export interface Actor {
   id: string;
-  status: ActorStatus;
-  score: number;
-  first_seen: string;
-  last_seen: string;
+  role: ActorRole;
+  /** 화면에는 앞 5개 + "+N" */
+  ips: string[];
   ip_count?: number;
+  fingerprints?: number;
+  /** 같은 주체로 묶은 행동 유사도 (0.85 기준) */
+  similarity?: number | null;
+  /** 묶은 근거 */
+  signals?: string[];
+  status: ActorStatus;
+  /** 분업 관계면 상위 주체 ID */
+  linked_to?: string | null;
 }
 
-export interface ActorLink {
-  kind: 'ip' | 'session' | 'token' | 'fingerprint';
-  value: string;
-  confidence: Confidence;
+export interface Rule {
+  id: string;
+  round: number;
+  technique: string;
+  title: string;
+  reason: string;
+  rule: Record<string, unknown>;
+  status: RuleStatus;
+  reattack_total: number | null;
+  reattack_success: number | null;
+  false_positive: number | null;
 }
 
-/** GET /ops/actors/{id} */
-export interface ActorDetail extends Actor {
-  links: ActorLink[];
-  timeline: OpsEvent[];
+export interface RediEvent {
+  /** 단조 증가. 프론트는 새 seq만 추가로 그린다 (줄어들면 초기화로 판단) */
+  seq: number;
+  time: string;
+  round: number;
+  side: Side;
+  type: EventType;
+  actor_id?: string | null;
+  technique?: string | null;
+  breach_kind?: BreachKind | null;
+  src_ip?: string | null;
+  request?: string | null;
+  status?: string | null;
+  /** 공격 AI의 판단 한 줄 */
+  thought?: string | null;
+  /** 시스템·방어 AI 메시지 */
+  message?: string | null;
 }
 
-export interface Decoy {
-  id: DecoyId;
-  kind: string;
-  path: string;
-  enabled: boolean;
+export interface Round {
+  round: number;
+  techniques?: string[];
+  /** 구버전 호환 (단수) */
+  technique?: string;
+  label?: string;
+  accounts: string[];
+  breach_kinds?: BreachKind[];
+  rule_ids?: string[];
+  /** 구버전 호환 (단수) */
+  rule_id?: string | null;
+  status: RoundStatus;
+  reattack_total: number | null;
+  reattack_success: number | null;
+  /** 라운드 내 룰 오탐률 중 최댓값(%) */
+  false_positive: number | null;
 }
 
-/** GET /ops/stats */
-export interface Stats {
-  real_leaks: number;
-  fake_records: number;
-  trap_hits: number;
-  total_events: number;
-  held_seconds: number;
-  quarantined_actors: number;
-}
-
-export type ActorUpdate = Partial<Actor> & { id: string };
-
-/** WS /ops/stream 메시지 */
-export type WsMessage =
-  | { type: 'event'; data: OpsEvent }
-  | { type: 'stats'; data: Stats }
-  | { type: 'actor_update'; data: ActorUpdate }
-  | { type: 'reset'; data: null };
-
-/** live와 mock이 똑같이 지키는 데이터 출처 인터페이스 */
-export interface Backend {
-  readonly kind: 'live' | 'mock';
-  connect(onMessage: (msg: WsMessage) => void, onStatus: (status: ConnStatus) => void): void;
-  close(): void;
-  probe(): Promise<boolean>;
-
-  getEvents(since?: string): Promise<OpsEvent[]>;
-  getStats(): Promise<Stats>;
-  getActors(): Promise<Actor[]>;
-  getActor(id: string): Promise<ActorDetail>;
-  getDecoys(): Promise<Decoy[]>;
-
-  setAllDecoys(enabled: boolean): Promise<Decoy[]>;
-  setDecoy(id: DecoyId, enabled: boolean): Promise<Decoy>;
-  releaseActor(id: string): Promise<unknown>;
-  reset(): Promise<unknown>;
-  run(mode: RunMode): Promise<unknown>;
+export interface DashboardState {
+  scenario: Scenario;
+  source?: 'mock' | 'stub' | 'live' | string;
+  /** 목업 전용: 현재 이벤트 번호 / 전체 */
+  step?: number;
+  total_steps?: number;
+  round: number;
+  total_rounds?: number;
+  phase: Phase;
+  risk: number;
+  risk_level: RiskLevel;
+  kpi: Kpi;
+  tactics?: Tactic[];
+  techniques: Technique[];
+  actors?: Actor[];
+  rules: Rule[];
+  events: RediEvent[];
+  rounds: Round[];
 }

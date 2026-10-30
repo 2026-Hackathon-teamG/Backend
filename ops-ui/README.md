@@ -1,97 +1,105 @@
-# 미끼망 관제실 (ops-ui)
+# ops-ui · REDI 관제 대시보드
 
-미끼망 게이트웨이에 걸린 AI 공격 에이전트를 실시간으로 보여 주는 관제 화면입니다.
-TypeScript + Vite, 프레임워크 없이 DOM을 직접 다룹니다.
+공격 AI와 방어 AI가 계정 탈취 시나리오로 싸우고, 뚫린 지점이 방어 룰로 바뀌어 재공격을 막는 과정을 보여주는 관제 화면입니다.
+**TypeScript + Vite**, 프레임워크 없이 바닐라 DOM으로 만들었습니다.
 
-## 실행
+## 빠른 시작
 
 ```bash
+cd ops-ui
 npm install
-npm run dev        # http://localhost:8003 (저장하면 바로 반영)
-npm run build      # 타입 검사 후 dist/ 생성
-npm run typecheck  # 타입 검사만
+npm run dev        # http://localhost:5173  (같은 Wi-Fi의 다른 PC는 http://<내 IP>:5173)
 ```
 
-| 상황 | 방법 |
+백엔드가 꺼져 있으면 자동으로 **MOCK**(5라운드 샘플 시나리오)으로 돌고, 켜져 있으면 **LIVE**로 붙습니다. 오른쪽 위 배지로 구분합니다.
+
+| 명령 | 설명 |
 |---|---|
-| 백엔드 없이 데모 | `npm run dev` → detector가 없으면 자동으로 MOCK |
-| Docker | `docker build -t ops-ui . && docker run -p 8003:8003 ops-ui` (빌드 후 nginx로 서빙) |
-| 다른 주소의 detector | `http://localhost:8003/?mode=live&api=http://192.168.0.10:8002` |
-| detector 주소를 빌드에 고정 | `VITE_API_BASE=http://10.0.0.5:8002 npm run build` |
+| `npm run dev` | 개발 서버. 저장하면 바로 반영. `/api` 요청은 백엔드(기본 `localhost:8000`)로 프록시 |
+| `npm run build` | 타입 검사 후 `dist/`에 배포용 파일 생성 |
+| `npm run preview` | `dist/`를 미리보기 (http://localhost:4173) |
+| `npm run typecheck` | 타입 검사만 |
+| `npm run sample` | 목업 시나리오로 `stub/`의 예시 응답 JSON 재생성 |
 
-`dist/index.html`을 파일로 직접 열면 동작하지 않습니다(ES 모듈). `npm run preview`나 Docker로 여세요.
+> `dist/index.html`은 더블클릭(file://)으로 열면 동작하지 않습니다. `npm run preview`나 백엔드 서버로 여세요.
 
-URL 파라미터
-- `mode=auto` (기본): detector `/healthz` 확인 후 LIVE, 실패하면 MOCK
-- `mode=mock`: 항상 목업 / `mode=live`: 항상 detector (끊기면 빨간 배지, 계속 재연결)
-- `api=<주소>`: detector 주소 (기본: 화면을 연 호스트의 `:8002`)
-- `step=<ms>`: 목업 요청 간격 (기본 650)
+## 설정
 
-오른쪽 위 배지: `LIVE` 초록, `MOCK` 호박, `연결 끊김` 빨강.
+`.env.example`을 `.env.local`로 복사해 바꿉니다 (`.env.local`은 git에 안 올라감).
 
-## 화면 구성
-
-이전 `redi-dashboard`의 콘솔 바, 위험도 링, MITRE 히트맵, 요약 PDF를 미끼망 데이터에 맞게 옮겨 합쳤습니다.
-
-1. **콘솔 바**: 단계 배지(대기 / 공격 진행 중 / 실제 데이터 유출 중 / 공격 주체 격리 중 / 실행 종료), `LEAK n` 배지, 요약 PDF(브라우저 인쇄), 미끼망 토글, 실시간/재생, 실행, 초기화
-2. **지표 6개**: 가로챈 비율 링(가짜 ÷ (실제 + 가짜) 레코드), 실제 고객 데이터 유출, 가짜 레코드 제공, 함정 접촉, 묶어 둔 시간, 격리된 공격 주체
-3. **mitre_attck.heatmap / penetration.by_technique**: 기법 6개 카드와 표. 뚫림=빨강, 시도 중=호박, 미끼에 걸림=초록, 관측 없음=점선. 클릭하면 판정 근거와 관련 요청
-4. **events.stream**: 요청 로그. bank로 나간 실제 유출은 빨강, 미끼 응답은 초록. `agent_note`는 "에이전트 판단" 줄로 표시
-5. **actors**: 공격 주체(`A-01` …) 카드. IP가 바뀌어도 한 카드 아래로 묶임. 확정=초록, 추정=호박. 클릭하면 타임라인
-6. **decoys**: 미끼 4종 개별 켜기/끄기
-7. **runs.compare**: 실행이 끝날 때마다 `/ops/stats` 값으로 한 줄 추가 (브라우저에 저장, 초기화해도 남음)
-
-격리 알림(`actor_update`, status=`quarantined`)이 오면 Discord 알림과 같은 문구로 토스트를 띄웁니다.
-
-### 기법 판정 (`src/techniques.ts`)
-
-백엔드는 기법 정보를 주지 않으므로 받은 이벤트로 화면에서 계산합니다.
-
-| 기법 | 해당 요청 | 뚫림 | 미끼에 걸림 |
-|---|---|---|---|
-| T1595 정찰 · 숨은 경로 탐색 | `/`, `/robots.txt`, `/api/v1/docs`, `/admin*` | — | 미끼가 주입된 응답을 읽음 |
-| T1190 인증 우회 · 내부 헤더 위장 | `internal_header`가 true인 `/api/v1/customers` | bank가 2xx | 미끼로 라우팅 |
-| T1213 고객 정보 열거 · 수집 | `/api/v1/customers`, `/api/internal/export` | bank가 레코드 반환 | 미끼로 라우팅 |
-| AML.T0051 숨은 안내문 추종 | `docs_bait`, `admin_legacy`, `/api/internal/export` | — | export 호출 |
-| T1090 IP 교체 · 추적 회피 | 직전 요청과 IP가 다른 요청 | 새 IP가 어느 주체에도 안 묶임 | 새 IP가 주체에 묶임 |
-| T1567 데이터 반출 (레코드 수) | `records_out > 0` | bank 레코드 | 미끼 레코드 |
-
-T1190은 이벤트의 `internal_header`(X-Internal-Request 포함 여부)로 판정합니다. 이 필드가 없는 이전 백엔드에서는 "세션 없는 호출"로 근사합니다.
-
-## 백엔드 계약 (detector :8002)
-
-| 메서드 | 경로 | 화면에서 쓰는 곳 |
+| 변수 | 기본값 | 설명 |
 |---|---|---|
-| WS | `/ops/stream` | `event`, `actor_update`, `stats`, `reset` 메시지로 실시간 갱신 |
-| GET | `/ops/events` | 처음 열 때와 재연결 때 최근 로그 채우기 |
-| GET | `/ops/stats` | 지표 초기값, 실행 종료 시 비교 표 |
-| GET | `/ops/actors`, `/ops/actors/{id}` | 공격 주체 카드와 상세 |
-| POST | `/ops/actors/{id}/release` | 오탐 해제 버튼 |
-| GET/PUT | `/ops/decoys`, `/ops/decoys/{id}` | 미끼 상태 |
-| POST | `/ops/demo/reset` | 초기화, 미끼망 토글 직후 |
-| POST | `/ops/demo/run` | `{"mode": "live" \| "replay"}` |
+| `API_PROXY_TARGET` | `http://localhost:8000` | dev·preview가 `/api`를 넘길 백엔드 주소 |
+| `VITE_DATA_MODE` | `auto` | `auto`(백엔드 시도 → 실패 시 목업) / `live` / `mock` |
+| `VITE_API_BASE` | (비움) | 빌드본을 백엔드와 다른 주소에서 띄울 때만 |
+| `VITE_POLL_MS` | `1000` | 폴링 간격 |
+| `VITE_MOCK_STEP_MS` | `900` | 목업 재생 속도 (발표용이면 1500 추천) |
 
-- 미끼망 토글 = `PUT /ops/decoys {"enabled": …}` → `POST /ops/demo/reset`
-- 실행 종료 = `agent_note`가 `__END__`인 이벤트 수신
-- `agent_note`, `path` 등은 공격자가 정하는 문자열이므로 모두 이스케이프해서 그립니다
+URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http://192.168.0.10:8000`, `?speed=1500`
 
-## 파일
+## 시나리오 재생 (MOCK)
+
+| 버튼 | 동작 |
+|---|---|
+| ▶ 처음부터 재생 | 0단계부터 자동 진행 |
+| 다음 단계 / 다음 라운드 | 한 이벤트 / 한 라운드씩 (발표용) |
+| 결과 바로 보기 / 초기화 | 마지막 상태 / 빈 화면 |
+
+| 라운드 | 공격 패턴 | 침투 | 방어 룰 |
+|---|---|---|---|
+| R1 | 비밀번호 대입 → 탈취 세션 사용 | 세션 탈취 | R1 IP 단위 임계치 |
+| R2 | IP + 브라우저 지문 로테이션 | 세션 탈취 | R2 공격 주체 단위 잠금 |
+| R3 | 정찰 에이전트 계정 열거 → 공격 에이전트 살포 | 계정 열거, 세션 탈취 | R3 응답 균일화, R4 작전 단위 다계정 |
+| R4 | 사람 흉내 타이밍 + 저속 스터핑 | 세션 탈취 | R5 미끼 접촉 격리 + 새 기기 추가 인증 |
+| R5 | 미끼 회피 + MFA 피로 공격 | MFA 승인 | R6 MFA 요청 제한 + 번호 일치 |
+
+## 백엔드 연동
+
+프론트는 두 엔드포인트만 씁니다.
+
+- `GET /api/state` → **`src/types.ts`의 `DashboardState`** 모양 (예시: `stub/sample-state.json`, `stub/sample-state-round4-decoy.json`)
+- `POST /api/control` ← `{"action": "play" | "next" | "next_round" | "end" | "reset"}`
+
+연동 테스트용 스텁:
+```bash
+pip install fastapi uvicorn
+cd stub && uvicorn server_stub:app --host 0.0.0.0 --port 8000
+# 다른 터미널에서 npm run dev → LIVE 배지 확인
+```
+`npm run build` 후 스텁을 켜면 `http://localhost:8000/`에서 빌드본도 같이 서빙합니다.
+
+### 판정 기준 (백엔드와 맞출 것)
+- **breach_kind:**
+  - `session`: 세션 획득
+  - `enumeration`: 응답 차이로 계정 식별
+  - `mfa`: MFA 승인 받음
+  - `data`: 실제 데이터 수집
+- **fitness:** 침투 1.0, 부분 0.8~0.99, 시도 중 실패 0.5, 재공격 모두 차단 0, 미테스트 `null`
+- **state:** `null`→untested, `0`→defended, `≥0.8`→breach, 그 외→near
+- **공격 주체:** 행동 유사도 ≥0.85면 같은 주체. 미끼 접촉은 유사도와 무관하게 자동화 확정
+- **risk:** `100 × (0.7 × 현재 최고 fitness + 0.3 × 테스트한 기법의 가중 평균 fitness)`
+
+## 폴더 구조
 
 ```
-ops-ui/
-├── index.html
-├── src/
-│   ├── main.ts        # 화면 렌더링과 조작
-│   ├── types.ts       # 백엔드 shared/models.py와 맞춘 타입, Backend 인터페이스
-│   ├── config.ts      # 주소, 모드, URL 파라미터
-│   ├── live.ts        # detector REST + WS (자동 재연결)
-│   ├── mock.ts        # 같은 인터페이스의 목업. 시연 시나리오 2·3장면 재현
-│   ├── techniques.ts  # 이벤트 → MITRE 기법 히트맵 판정
-│   ├── util.ts        # 이스케이프, 숫자·시간 포맷, localStorage
-│   └── style.css
-├── vite.config.ts     # dev 서버 :8003
-├── nginx.conf         # :8003, /healthz
-└── Dockerfile         # node 빌드 → nginx
+index.html               화면 뼈대
+src/
+  main.ts                진입점: 데이터 소스 선택, 폴링·재시도
+  types.ts               ★ /api/state 응답 타입 (백엔드 계약)
+  config.ts              .env / URL 파라미터 읽기
+  api.ts                 LiveSource(백엔드) / MockSource(목업)
+  styles.css             스타일 (색상 토큰은 맨 위 :root)
+  mock/scenario.ts       5라운드 시나리오 데이터 ← 문구·수치 수정은 여기
+  mock/buildState.ts     이벤트 → 상태 계산
+  ui/                    화면 모듈 (header, techniques, actors, timeline, rulesRounds)
+scripts/export-sample.ts 예시 응답 생성
+stub/                    백엔드 스텁 + 예시 응답
 ```
 
-백엔드 `shared/models.py`가 바뀌면 `src/types.ts`도 같이 바꿉니다.
+## 수정 포인트
+- **새 공격 기법:** `mock/scenario.ts`의 `TECHNIQUES`에 추가하고 `tactic`을 지정하면 히트맵에 자동 배치됩니다.
+- **새 이벤트 타입:**
+  1. `types.ts`의 `EventType`에 추가
+  2. `ui/shared.ts`의 `LABEL`에 추가 (빠뜨리면 타입 오류로 알려 줌)
+  3. `styles.css`의 `.ev.<타입>`에 색 지정
+- **보안:** LLM이 만든 문장(thought, message, reason, signals)은 반드시 `esc()`를 거쳐 `innerHTML`에 넣으세요.
