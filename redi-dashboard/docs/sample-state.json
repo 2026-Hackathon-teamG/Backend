@@ -1,0 +1,586 @@
+{
+  "scenario": {
+    "id": "ato-001",
+    "title": "계정 탈취 시나리오",
+    "target": "sample-bank /login"
+  },
+  "source": "mock",
+  "step": 24,
+  "total_steps": 24,
+  "round": 4,
+  "total_rounds": 4,
+  "phase": "done",
+  "risk": 0,
+  "risk_level": "SECURE",
+  "kpi": {
+    "total_attempts": 174,
+    "attack_attempts": 86,
+    "breaches": 5,
+    "breach_rate": 5.8,
+    "rules_applied": 4,
+    "reattack_total": 88,
+    "reattack_blocked": 88
+  },
+  "techniques": [
+    {
+      "id": "T1110.001",
+      "name": "Password Guessing",
+      "name_ko": "비밀번호 대입",
+      "state": "defended",
+      "fitness": 0,
+      "fitness_peak": 1,
+      "attempts": 18,
+      "blocked": 10,
+      "partial": 0,
+      "breached": 1,
+      "rule_id": "R1",
+      "detail": {
+        "how": "한 IP에서 admin 계정에 흔한 비밀번호를 순서대로 대입",
+        "why": "로그인 실패 횟수 제한이 전혀 없었음",
+        "rule": "R1 · IP 단위 실패 임계치"
+      }
+    },
+    {
+      "id": "T1078",
+      "name": "Valid Accounts",
+      "name_ko": "탈취 세션 사용",
+      "state": "defended",
+      "fitness": 0,
+      "fitness_peak": 0.85,
+      "attempts": 1,
+      "blocked": 0,
+      "partial": 1,
+      "breached": 0,
+      "rule_id": "R1",
+      "detail": {
+        "how": "탈취한 세션으로 계좌 조회 API 호출",
+        "why": "세션만 있으면 조회는 통과. 이체는 기존 추가 인증에 막혀 부분 성공(0.85)",
+        "rule": "R1 · IP 단위 실패 임계치"
+      }
+    },
+    {
+      "id": "T1090",
+      "name": "Proxy · IP Spoofing",
+      "name_ko": "IP 헤더 위조",
+      "state": "defended",
+      "fitness": 0,
+      "fitness_peak": 1,
+      "attempts": 15,
+      "blocked": 8,
+      "partial": 0,
+      "breached": 1,
+      "rule_id": "R2",
+      "detail": {
+        "how": "X-Forwarded-For를 요청마다 바꿔 여러 IP처럼 위장",
+        "why": "IP 차단 룰이 위조 가능한 헤더 값을 IP로 믿었음",
+        "rule": "R2 · 계정 단위 잠금 + 헤더 신뢰 제한"
+      }
+    },
+    {
+      "id": "T1110.003",
+      "name": "Password Spraying",
+      "name_ko": "비밀번호 살포",
+      "state": "defended",
+      "fitness": 0,
+      "fitness_peak": 1,
+      "attempts": 80,
+      "blocked": 40,
+      "partial": 0,
+      "breached": 1,
+      "rule_id": "R3",
+      "detail": {
+        "how": "계정 40개에 흔한 비밀번호 하나로 1회씩 시도",
+        "why": "계정당 실패 1회라 계정 잠금 임계치 아래",
+        "rule": "R3 · 지문 단위 다계정 시도"
+      }
+    },
+    {
+      "id": "T1110.004",
+      "name": "Credential Stuffing",
+      "name_ko": "유출 계정 대입",
+      "state": "defended",
+      "fitness": 0,
+      "fitness_peak": 1,
+      "attempts": 60,
+      "blocked": 30,
+      "partial": 0,
+      "breached": 2,
+      "rule_id": "R4",
+      "detail": {
+        "how": "가짜 유출 목록 30쌍을 45초 간격, 매번 새 IP로 대입",
+        "why": "속도·분산 임계치 모두 아래. 비밀번호 자체는 맞았음",
+        "rule": "R4 · 처음 보는 기기 추가 인증"
+      }
+    },
+    {
+      "id": "T1621",
+      "name": "MFA Request Generation",
+      "name_ko": "MFA 피로 공격",
+      "state": "untested",
+      "fitness": null,
+      "fitness_peak": 0,
+      "attempts": 0,
+      "blocked": 0,
+      "partial": 0,
+      "breached": 0,
+      "rule_id": null,
+      "detail": {
+        "how": "아직 실행하지 않음 (다음 확장 후보)",
+        "why": "—",
+        "rule": null
+      }
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1",
+      "round": 1,
+      "technique": "T1110.001",
+      "title": "IP 단위 실패 임계치",
+      "reason": "같은 IP에서 60초 안에 admin 로그인 실패 7회 뒤 성공",
+      "rule": {
+        "type": "threshold",
+        "key": "ip",
+        "event": "login_fail",
+        "threshold": 5,
+        "window_sec": 60,
+        "action": "block_ip",
+        "ttl_sec": 900
+      },
+      "status": "verified",
+      "reattack_total": 10,
+      "reattack_success": 0,
+      "false_positive": 0
+    },
+    {
+      "id": "R2",
+      "round": 2,
+      "technique": "T1090",
+      "title": "계정 단위 잠금 + 헤더 신뢰 제한",
+      "reason": "출발 IP 7개, 대상 계정은 kim.j 하나. X-Forwarded-For가 게이트웨이를 거치지 않은 요청에서 옴",
+      "rule": {
+        "type": "threshold",
+        "key": "username",
+        "event": "login_fail",
+        "threshold": 5,
+        "window_sec": 300,
+        "action": "lock_account",
+        "ttl_sec": 900,
+        "trust_xff_from": [
+          "gateway"
+        ]
+      },
+      "status": "verified",
+      "reattack_total": 8,
+      "reattack_success": 0,
+      "false_positive": 2
+    },
+    {
+      "id": "R3",
+      "round": 3,
+      "technique": "T1110.003",
+      "title": "지문 단위 다계정 시도",
+      "reason": "같은 클라이언트 지문이 5분 동안 서로 다른 계정 40개에 로그인 시도",
+      "rule": {
+        "type": "distinct",
+        "key": "client_fp",
+        "count": "username",
+        "threshold": 10,
+        "window_sec": 300,
+        "action": "block_fp"
+      },
+      "status": "verified",
+      "reattack_total": 40,
+      "reattack_success": 0,
+      "false_positive": 0
+    },
+    {
+      "id": "R4",
+      "round": 4,
+      "technique": "T1110.004",
+      "title": "처음 보는 기기 추가 인증",
+      "reason": "성공 2건 모두 처음 보는 기기에서 비밀번호 첫 시도로 로그인",
+      "rule": {
+        "type": "header_check",
+        "when": {
+          "device_cookie": "absent",
+          "first_try_success": true
+        },
+        "action": "step_up_auth"
+      },
+      "status": "verified",
+      "reattack_total": 30,
+      "reattack_success": 0,
+      "false_positive": 1.5
+    }
+  ],
+  "events": [
+    {
+      "seq": 1,
+      "time": "00:02",
+      "round": 1,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1110.001",
+      "src_ip": "203.0.113.24",
+      "request": "POST /login  user=admin  ×4",
+      "status": "401",
+      "thought": "로그인 화면에 잠금 안내가 없다. 흔한 비밀번호 사전부터 대입한다.",
+      "message": null
+    },
+    {
+      "seq": 2,
+      "time": "00:05",
+      "round": 1,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1110.001",
+      "src_ip": "203.0.113.24",
+      "request": "POST /login  user=admin  ×4",
+      "status": "200 세션 발급",
+      "thought": "8번째 시도에서 세션 토큰을 받았다.",
+      "message": null
+    },
+    {
+      "seq": 3,
+      "time": "00:06",
+      "round": 1,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1078",
+      "src_ip": "203.0.113.24",
+      "request": "GET /api/v1/accounts  [탈취 세션]",
+      "status": "200",
+      "thought": "계좌 목록은 열린다. 이체 API는 추가 인증을 요구해 여기서 멈춘다.",
+      "message": null
+    },
+    {
+      "seq": 4,
+      "time": "00:06",
+      "round": 1,
+      "side": "system",
+      "type": "breach",
+      "technique": "T1110.001",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "admin 계정 세션이 공격 에이전트에게 발급됐습니다. 판정 기준: 세션 토큰 획득."
+    },
+    {
+      "seq": 5,
+      "time": "00:08",
+      "round": 1,
+      "side": "blue",
+      "type": "analysis",
+      "technique": "T1110.001",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "로그 분석: 같은 IP에서 60초 안에 admin 로그인 실패 7회 뒤 성공. IP 단위 임계치 룰을 만듭니다."
+    },
+    {
+      "seq": 6,
+      "time": "00:09",
+      "round": 1,
+      "side": "system",
+      "type": "rule_applied",
+      "technique": null,
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "R1 스키마 검증 통과, 게이트웨이에 적용했습니다 (핫 리로드 0.3초)."
+    },
+    {
+      "seq": 7,
+      "time": "00:15",
+      "round": 1,
+      "side": "system",
+      "type": "verify",
+      "technique": "T1110.001",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "같은 공격 플랜 재실행: 10회 중 성공 0회. 정상 사용자 50명 오탐 0%."
+    },
+    {
+      "seq": 8,
+      "time": "00:21",
+      "round": 2,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1090",
+      "src_ip": "198.51.100.12 외 5개",
+      "request": "POST /login  user=kim.j  X-Forwarded-For 로테이션 ×6",
+      "status": "401",
+      "thought": "IP 단위로 막혔다. 요청마다 헤더를 바꿔 다른 IP인 척한다.",
+      "message": null
+    },
+    {
+      "seq": 9,
+      "time": "00:27",
+      "round": 2,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1090",
+      "src_ip": "192.0.2.88",
+      "request": "POST /login  user=kim.j",
+      "status": "200 세션 발급",
+      "thought": "7번째 시도에서 성공. R1에 걸리지 않았다.",
+      "message": null
+    },
+    {
+      "seq": 10,
+      "time": "00:27",
+      "round": 2,
+      "side": "system",
+      "type": "breach",
+      "technique": "T1090",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "kim.j 계정 세션 탈취. IP 헤더 위조로 R1을 우회했습니다."
+    },
+    {
+      "seq": 11,
+      "time": "00:29",
+      "round": 2,
+      "side": "blue",
+      "type": "analysis",
+      "technique": "T1090",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "출발 IP는 7개로 흩어졌지만 대상 계정은 kim.j 하나이고, X-Forwarded-For가 게이트웨이를 거치지 않은 요청에서 왔습니다. 계정 단위 잠금 룰을 만듭니다."
+    },
+    {
+      "seq": 12,
+      "time": "00:30",
+      "round": 2,
+      "side": "system",
+      "type": "rule_applied",
+      "technique": null,
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "R2 적용. 게이트웨이 밖에서 붙은 X-Forwarded-For는 이제 무시합니다."
+    },
+    {
+      "seq": 13,
+      "time": "00:36",
+      "round": 2,
+      "side": "system",
+      "type": "verify",
+      "technique": "T1090",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "재공격 8회 중 성공 0회. 정상 사용자 1명이 비밀번호를 5번 틀려 잠김 (오탐 2.0%)."
+    },
+    {
+      "seq": 14,
+      "time": "00:42",
+      "round": 3,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1110.003",
+      "src_ip": "192.0.2.0/24 대역",
+      "request": "POST /login  계정 40개 × 1회  password=Spring2026!",
+      "status": "401 ×39 · 200 ×1",
+      "thought": "계정마다 한 번씩만 시도하면 잠금에 안 걸린다. 흔한 비밀번호 하나로 돈다.",
+      "message": null
+    },
+    {
+      "seq": 15,
+      "time": "00:42",
+      "round": 3,
+      "side": "system",
+      "type": "breach",
+      "technique": "T1110.003",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "lee.s 계정 세션 탈취. 계정당 실패가 1회라 R2 임계치 아래였습니다."
+    },
+    {
+      "seq": 16,
+      "time": "00:44",
+      "round": 3,
+      "side": "blue",
+      "type": "analysis",
+      "technique": "T1110.003",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "계정별 실패는 1회뿐이지만 같은 클라이언트 지문이 5분 동안 서로 다른 계정 40개에 로그인을 시도했습니다. 지문 단위 다계정 룰을 만듭니다."
+    },
+    {
+      "seq": 17,
+      "time": "00:45",
+      "round": 3,
+      "side": "system",
+      "type": "rule_applied",
+      "technique": null,
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "R3 적용."
+    },
+    {
+      "seq": 18,
+      "time": "00:52",
+      "round": 3,
+      "side": "system",
+      "type": "verify",
+      "technique": "T1110.003",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "재공격 40회 중 성공 0회. 11번째 계정에서 지문이 차단됐습니다. 오탐 0%."
+    },
+    {
+      "seq": 19,
+      "time": "01:20",
+      "round": 4,
+      "side": "red",
+      "type": "attack",
+      "technique": "T1110.004",
+      "src_ip": "요청마다 새 IP (30개)",
+      "request": "POST /login  가짜 유출 목록 30쌍 · 45초 간격",
+      "status": "401 ×28 · 200 ×2",
+      "thought": "빠르게 돌면 걸린다. 다른 곳에서 유출된 계정·비번 쌍을 천천히 하나씩 넣는다.",
+      "message": null
+    },
+    {
+      "seq": 20,
+      "time": "01:20",
+      "round": 4,
+      "side": "system",
+      "type": "breach",
+      "technique": "T1110.004",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "park.h, choi.m 계정 세션 탈취. 속도·분산 임계치 모두 아래였습니다."
+    },
+    {
+      "seq": 21,
+      "time": "01:22",
+      "round": 4,
+      "side": "blue",
+      "type": "analysis",
+      "technique": "T1110.004",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "성공한 2건 모두 처음 보는 기기에서 비밀번호 첫 시도로 로그인했습니다. 속도 대신 로그인 맥락을 보는 룰을 만듭니다."
+    },
+    {
+      "seq": 22,
+      "time": "01:23",
+      "round": 4,
+      "side": "system",
+      "type": "rule_applied",
+      "technique": null,
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "R4 적용. 차단이 아니라 추가 인증을 요구합니다."
+    },
+    {
+      "seq": 23,
+      "time": "01:47",
+      "round": 4,
+      "side": "system",
+      "type": "verify",
+      "technique": "T1110.004",
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "재공격 30회 중 성공 0회. 새 기기로 로그인한 정상 사용자 1명이 추가 인증을 한 번 거쳤습니다 (오탐 1.5%, 차단 아님)."
+    },
+    {
+      "seq": 24,
+      "time": "01:48",
+      "round": 4,
+      "side": "system",
+      "type": "end",
+      "technique": null,
+      "src_ip": null,
+      "request": null,
+      "status": null,
+      "thought": null,
+      "message": "4라운드 종료. 탈취 경로 모두 재공격 차단, 운영 중인 룰 4개."
+    }
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "technique": "T1110.001",
+      "label": "비밀번호 대입 → 세션 사용",
+      "accounts": [
+        "admin"
+      ],
+      "rule_id": "R1",
+      "status": "verified",
+      "reattack_total": 10,
+      "reattack_success": 0,
+      "false_positive": 0
+    },
+    {
+      "round": 2,
+      "technique": "T1090",
+      "label": "IP 헤더 위조",
+      "accounts": [
+        "kim.j"
+      ],
+      "rule_id": "R2",
+      "status": "verified",
+      "reattack_total": 8,
+      "reattack_success": 0,
+      "false_positive": 2
+    },
+    {
+      "round": 3,
+      "technique": "T1110.003",
+      "label": "비밀번호 살포",
+      "accounts": [
+        "lee.s"
+      ],
+      "rule_id": "R3",
+      "status": "verified",
+      "reattack_total": 40,
+      "reattack_success": 0,
+      "false_positive": 0
+    },
+    {
+      "round": 4,
+      "technique": "T1110.004",
+      "label": "유출 계정 대입 (저속)",
+      "accounts": [
+        "park.h",
+        "choi.m"
+      ],
+      "rule_id": "R4",
+      "status": "verified",
+      "reattack_total": 30,
+      "reattack_success": 0,
+      "false_positive": 1.5
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>REDI 관제 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="app">
+
+  <!-- 1. 콘솔 바 -->
+  <section class="win console" aria-label="리포트 콘솔">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title">redi@console — ~/reports/<span data-bind="scenarioId">ato-001</span></span>
+      <span class="conn" id="conn" title="데이터 출처">연결 확인 중</span>
+    </div>
+    <div class="cmdline">
+      <span class="prompt">redi@console:~$</span>
+      <span class="cmd">redi report --scenario <span data-bind="scenarioId">ato-001</span></span>
+      <span class="phase" id="phase">대기</span>
+      <span class="spacer"></span>
+      <span class="risk-badge" id="riskBadge">RISK —</span>
+      <button class="btn" type="button" id="pdfBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+        요약 PDF
+      </button>
+    </div>
+    <div class="controls" id="controls">
+      <button class="btn primary" type="button" data-action="play">▶ 처음부터 재생</button>
+      <button class="btn" type="button" data-action="next">다음 단계</button>
+      <button class="btn" type="button" data-action="next_round">다음 라운드</button>
+      <button class="btn" type="button" data-action="end">결과 바로 보기</button>
+      <button class="btn ghost" type="button" data-action="reset">초기화</button>
+      <span class="spacer"></span>
+      <span class="progress mono" id="progress">—</span>
+    </div>
+  </section>
+
+  <!-- 2. KPI -->
+  <section class="kpis" aria-label="요약 지표">
+    <article class="kpi">
+      <svg class="ring" viewBox="0 0 80 80" aria-hidden="true">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" id="ringFg" cx="40" cy="40" r="34" transform="rotate(-90 40 40)"/>
+      </svg>
+      <div>
+        <div class="kpi-v"><span id="kRisk">—</span><small>/100</small></div>
+        <div class="kpi-k">종합 위험도</div>
+      </div>
+    </article>
+    <article class="kpi">
+      <div>
+        <div class="kpi-v plain" id="kAttempts">—</div>
+        <div class="kpi-k" id="kAttemptsSub">총 공격 시도</div>
+      </div>
+    </article>
+    <article class="kpi">
+      <div>
+        <div class="kpi-v red" id="kBreaches">—</div>
+        <div class="kpi-k" id="kBreachSub">침투 성공</div>
+      </div>
+    </article>
+    <article class="kpi">
+      <div>
+        <div class="kpi-v green" id="kRules">—</div>
+        <div class="kpi-k" id="kRulesSub">적용된 방어 룰</div>
+      </div>
+    </article>
+  </section>
+
+  <!-- 3. 히트맵 + 기법별 표 -->
+  <div class="row">
+    <section class="win grow" aria-labelledby="hmTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="hmTitle">mitre_attck.heatmap</span>
+        <span class="win-meta" id="hmMeta">—</span>
+      </div>
+      <div class="win-body">
+        <p class="hint">숫자 = <b>최고 공격 fitness</b> · <b>1.00</b>이면 침투 성공(세션 획득), 낮을수록 방어 견고. 방어된 기법은 <b>전 → 후</b>로 표시됩니다.</p>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="legend">
+          <span><i class="sw breach"></i>침투(뚫림)</span>
+          <span><i class="sw near"></i>위험 근접</span>
+          <span><i class="sw defended"></i>방어</span>
+          <span><i class="sw untested"></i>미테스트</span>
+          <span class="spacer"></span>
+          <span class="link">↗ 셀 클릭 → 상세</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="win side" aria-labelledby="ptTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="ptTitle">penetration.by_technique</span>
+        <span class="win-meta">기법별 침투율</span>
+      </div>
+      <div class="win-body">
+        <div class="tbox">
+          <table class="ttable">
+            <thead><tr><th>기법</th><th class="n">시도</th><th class="n">방어</th><th class="n">부분</th><th class="n">뚫림</th></tr></thead>
+            <tbody id="techTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- 4. 타임라인 + 방어 룰 -->
+  <div class="row">
+    <section class="win grow" aria-labelledby="tlTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="tlTitle">battle.timeline</span>
+        <span class="win-meta">red-agent ⇄ blue-agent</span>
+      </div>
+      <div class="filters" role="group" aria-label="타임라인 필터">
+        <button class="chip on" type="button" data-filter="all">전체</button>
+        <button class="chip" type="button" data-filter="red">공격 AI</button>
+        <button class="chip" type="button" data-filter="blue">방어 AI</button>
+        <button class="chip" type="button" data-filter="system">판정·검증</button>
+        <span class="spacer"></span>
+        <label class="follow"><input type="checkbox" id="followChk" checked> 자동 스크롤</label>
+      </div>
+      <ol class="timeline" id="timeline" aria-live="polite"></ol>
+    </section>
+
+    <section class="win side" aria-labelledby="rlTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="rlTitle">rules.active</span>
+        <span class="win-meta" id="rlMeta">—</span>
+      </div>
+      <div class="win-body rules" id="rules"></div>
+    </section>
+  </div>
+
+  <!-- 5. 라운드 요약 -->
+  <section class="win" aria-labelledby="rdTitle">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title" id="rdTitle">rounds.summary</span>
+      <span class="win-meta">같은 공격 플랜을 룰 적용 전후로 실행</span>
+    </div>
+    <div class="win-body">
+      <div class="tbox">
+        <table class="rtable">
+          <thead><tr><th>라운드</th><th>공격 기법</th><th>탈취 계정</th><th>생성 룰</th><th>재공격 결과</th><th>정상 사용자 오탐</th><th>상태</th></tr></thead>
+          <tbody id="roundTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">공격 대상은 로컬 샘플은행 서버 하나이며, 계정·비밀번호·유출 목록은 모두 팀이 만든 가짜 데이터입니다.</p>
+</main>
+
+<!-- 기법 상세 -->
+<dialog class="detail" id="techDialog" aria-labelledby="dlgTitle">
+  <form method="dialog">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title" id="dlgTitle">technique.detail</span>
+      <button class="icon-btn" type="submit" aria-label="닫기">✕</button>
+    </div>
+    <div class="win-body" id="dlgBody"></div>
+  </form>
+</dialog>
+
+<script src="js/config.js"></script>
+<script src="js/mock.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
