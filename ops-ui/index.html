@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>미끼망 관제실</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+</head>
+<body>
+<div class="app">
+
+  <!-- 1. 콘솔 바 -->
+  <section class="win console" aria-label="관제 콘솔">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title">mikki@ops — ~/targets/hangyeol-bank</span>
+      <span class="badge" id="connBadge">연결 중</span>
+    </div>
+    <div class="cmdline">
+      <span class="prompt">mikki@ops:~$</span>
+      <span class="cmd">mikki watch --gateway :8000 --target 한결은행</span>
+      <span class="phase" id="phase">대기</span>
+      <span class="spacer"></span>
+      <span class="risk-badge" id="riskBadge">LEAK 0</span>
+      <button class="btn" type="button" id="pdfBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>
+        요약 PDF
+      </button>
+    </div>
+    <div class="controls">
+      <label class="switch" title="끄면 미끼를 주입하지 않고 미끼 경로는 bank로 넘어갑니다">
+        <input type="checkbox" id="decoyToggle" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+        <span class="switch-label" id="decoyToggleLabel">미끼망 켜짐</span>
+      </label>
+      <div class="seg" role="radiogroup" aria-label="실행 방식">
+        <label><input type="radio" name="runMode" value="live" checked><span>실시간</span></label>
+        <label><input type="radio" name="runMode" value="replay"><span>재생</span></label>
+      </div>
+      <button class="btn btn-primary" type="button" id="runBtn">▶ 공격 시뮬레이션 실행</button>
+      <button class="btn btn-ghost" type="button" id="resetBtn">초기화</button>
+      <span class="spacer"></span>
+      <span class="progress mono" id="progress">—</span>
+    </div>
+  </section>
+
+  <!-- 2. 지표 -->
+  <section class="kpis" aria-label="요약 지표">
+    <div class="kpi kpi-ring">
+      <svg class="ring" viewBox="0 0 80 80" aria-hidden="true">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fg" id="ringFg" cx="40" cy="40" r="34" transform="rotate(-90 40 40)"/>
+      </svg>
+      <div>
+        <div class="kpi-value mono"><span id="kCatch">—</span><small>%</small></div>
+        <div class="kpi-label">가로챈 비율</div>
+      </div>
+    </div>
+    <div class="kpi kpi-red">
+      <div class="kpi-label">실제 고객 데이터 유출</div>
+      <div class="kpi-value mono" id="kRealLeaks">0</div>
+      <div class="kpi-sub">bank가 내준 고객 레코드</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-label">가짜 레코드 제공</div>
+      <div class="kpi-value mono" id="kFake">0</div>
+      <div class="kpi-sub">추적 표식이 든 미끼 데이터</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">함정 접촉</div>
+      <div class="kpi-value mono" id="kTrap">0</div>
+      <div class="kpi-sub">/admin-legacy · /api/internal/export</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">묶어 둔 시간</div>
+      <div class="kpi-value mono" id="kHeld">0초</div>
+      <div class="kpi-sub">미끼 공간에 머문 시간 합</div>
+    </div>
+    <div class="kpi kpi-amber">
+      <div class="kpi-label">격리된 공격 주체</div>
+      <div class="kpi-value mono" id="kActors">0</div>
+      <div class="kpi-sub">IP와 상관없이 묶은 단위</div>
+    </div>
+  </section>
+
+  <!-- 3. 기법 히트맵 + 기법별 표 -->
+  <div class="flexrow">
+    <section class="win grow" aria-labelledby="hmTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="hmTitle">mitre_attck.heatmap</span>
+        <span class="win-meta" id="hmMeta">—</span>
+      </div>
+      <div class="win-body">
+        <p class="hint">공격 에이전트의 요청을 기법별로 나눴습니다. 숫자는 <b>실제 성공</b>이면 bank가 응답한 건수, <b>미끼에 걸림</b>이면 미끼가 응답한 건수입니다.</p>
+        <div class="heatmap" id="heatmap"></div>
+        <div class="legend">
+          <span><i class="sw breach"></i>실제 성공(뚫림)</span>
+          <span><i class="sw near"></i>시도 중</span>
+          <span><i class="sw defended"></i>미끼에 걸림</span>
+          <span><i class="sw untested"></i>관측 없음</span>
+          <span class="spacer"></span>
+          <span class="link">↗ 카드 클릭 → 상세</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="win side" aria-labelledby="ptTitle">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title" id="ptTitle">penetration.by_technique</span>
+        <span class="win-meta">기법별 결과</span>
+      </div>
+      <div class="table-wrap">
+        <table class="tbl ttable">
+          <thead><tr><th>기법</th><th class="num">시도</th><th class="num">거부</th><th class="num">미끼</th><th class="num">실제 성공</th></tr></thead>
+          <tbody id="techTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- 4. 로그 + 공격 주체 + 미끼 -->
+  <main class="grid">
+    <section class="win win-log">
+      <div class="win-bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="win-title">events.stream</span>
+        <span class="win-meta"><span id="logCount">0</span>건</span>
+        <label class="chk"><input type="checkbox" id="autoScroll" checked> 자동 스크롤</label>
+      </div>
+      <div class="log" id="log" aria-live="polite">
+        <div class="empty" id="logEmpty">아직 들어온 요청이 없습니다. "공격 시뮬레이션 실행"을 눌러 보세요.</div>
+      </div>
+    </section>
+
+    <div class="side-col">
+      <section class="win">
+        <div class="win-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="win-title">actors</span>
+          <span class="win-meta" id="actorMeta">0명</span>
+        </div>
+        <div class="win-body" id="actors">
+          <div class="empty">탐지된 공격 주체가 없습니다.</div>
+        </div>
+      </section>
+
+      <section class="win">
+        <div class="win-bar">
+          <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="win-title">decoys</span>
+          <span class="win-meta" id="decoyMeta"></span>
+        </div>
+        <div class="win-body" id="decoys"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 5. 실행 결과 비교 -->
+  <section class="win">
+    <div class="win-bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="win-title">runs.compare</span>
+      <span class="win-meta">같은 에이전트를 미끼망 끄고/켜고 실행</span>
+      <button class="btn btn-ghost btn-sm" id="clearRunsBtn">표 지우기</button>
+    </div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>#</th><th>종료 시각</th><th>미끼망</th><th>방식</th>
+            <th class="num">실제 유출</th><th class="num">가짜 레코드</th>
+            <th class="num">함정 접촉</th><th class="num">묶어 둔 시간</th><th class="num">격리 주체</th>
+          </tr>
+        </thead>
+        <tbody id="runs">
+          <tr class="empty-row"><td colspan="9">실행이 끝나면 여기에 한 줄씩 쌓입니다.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">미끼망 관제실 · 한결은행은 가상 은행이며 모든 고객 데이터는 Faker로 만든 가짜입니다.</p>
+</div>
+
+<!-- 공격 주체 / 기법 상세 (같은 창을 재사용) -->
+<dialog class="modal" id="detailModal">
+  <div class="modal-head">
+    <h2 id="detailTitle">—</h2>
+    <button class="btn btn-ghost btn-sm" id="detailClose">닫기</button>
+  </div>
+  <div class="modal-body" id="detailBody"></div>
+</dialog>
+
+<div class="toasts" id="toasts"></div>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
