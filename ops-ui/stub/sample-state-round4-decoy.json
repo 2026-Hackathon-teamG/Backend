@@ -8,6 +8,12 @@
       "lon": 126.98,
       "city": "서울",
       "country": "KR"
+    },
+    "decoy_geo": {
+      "lat": 33.5,
+      "lon": 126.53,
+      "city": "제주",
+      "country": "KR"
     }
   },
   "source": "mock",
@@ -397,6 +403,7 @@
           "country": "NL"
         }
       ],
+      "dest": null,
       "request": "POST /login  user=admin  ×4",
       "status": "401",
       "thought": "로그인 화면에 잠금 안내가 없다. 흔한 비밀번호 사전부터 대입한다.",
@@ -420,6 +427,7 @@
           "country": "NL"
         }
       ],
+      "dest": null,
       "request": "POST /login  user=admin  ×4",
       "status": "200 세션 발급",
       "thought": "8번째 시도에서 세션 토큰을 받았다.",
@@ -443,6 +451,7 @@
           "country": "NL"
         }
       ],
+      "dest": null,
       "request": "GET /api/v1/accounts  [탈취 세션]",
       "status": "200",
       "thought": "계좌 목록은 열린다. 이체 API는 추가 인증을 요구해 여기서 멈춘다.",
@@ -459,6 +468,7 @@
       "breach_kind": "session",
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -475,6 +485,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -491,6 +502,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -507,6 +519,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -554,6 +567,7 @@
           "country": "US"
         }
       ],
+      "dest": null,
       "request": "POST /login  user=kim.j  ×6  (IP·User-Agent 매번 교체)",
       "status": "401",
       "thought": "IP 단위로 막혔다. 출발 IP와 브라우저 지문을 요청마다 바꿔 매번 다른 사람인 척한다.",
@@ -577,6 +591,7 @@
           "country": "HK"
         }
       ],
+      "dest": null,
       "request": "POST /login  user=kim.j",
       "status": "200 세션 발급",
       "thought": "7번째 시도에서 성공. R1에 걸리지 않았다.",
@@ -593,6 +608,7 @@
       "breach_kind": "session",
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -609,6 +625,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -625,6 +642,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -641,6 +659,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -657,6 +676,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -680,6 +700,7 @@
           "country": "RO"
         }
       ],
+      "dest": null,
       "request": "GET /robots.txt → GET /admin-legacy",
       "status": "200",
       "thought": "정찰 담당이다. 숨겨진 관리자 경로가 있는지부터 본다.",
@@ -695,7 +716,15 @@
       "technique": null,
       "breach_kind": null,
       "src_ip": null,
-      "src_geo": null,
+      "src_geo": [
+        {
+          "lat": 44.43,
+          "lon": 26.1,
+          "city": "부쿠레슈티",
+          "country": "RO"
+        }
+      ],
+      "dest": null,
       "request": "GET /admin-legacy",
       "status": null,
       "thought": null,
@@ -719,6 +748,7 @@
           "country": "RO"
         }
       ],
+      "dest": null,
       "request": "POST /login  아이디 200개 × 1회 (비밀번호 무작위)",
       "status": "응답 문구 2종",
       "thought": "\"없는 계정\"과 \"비밀번호 오류\" 문구가 다르다. 존재하는 계정만 골라 공격 담당에게 넘긴다.",
@@ -735,6 +765,7 @@
       "breach_kind": "enumeration",
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -758,6 +789,7 @@
           "country": "US"
         }
       ],
+      "dest": null,
       "request": "POST /login  계정 37개 × 1회  password=Spring2026!",
       "status": "401 ×36 · 200 ×1",
       "thought": "정찰이 넘긴 계정 37개에 한 번씩만 넣는다. 계정 잠금에는 안 걸린다.",
@@ -774,6 +806,7 @@
       "breach_kind": "session",
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -790,6 +823,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -806,6 +840,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -822,6 +857,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -838,6 +874,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -854,6 +891,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -870,6 +908,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -886,6 +925,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -1083,6 +1123,7 @@
           "country": "FI"
         }
       ],
+      "dest": null,
       "request": "POST /login  가짜 유출 목록 30쌍 · 45~90초 무작위 간격",
       "status": "401 ×28 · 200 ×2",
       "thought": "일정한 속도는 묶인다. 간격을 사람처럼 흩뜨리고, IP·지문도 매번 바꾼다.",
@@ -1099,6 +1140,7 @@
       "breach_kind": "session",
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -1115,6 +1157,7 @@
       "breach_kind": null,
       "src_ip": null,
       "src_geo": null,
+      "dest": null,
       "request": null,
       "status": null,
       "thought": null,
@@ -1130,7 +1173,15 @@
       "technique": null,
       "breach_kind": null,
       "src_ip": null,
-      "src_geo": null,
+      "src_geo": [
+        {
+          "lat": 35.18,
+          "lon": 129.08,
+          "city": "부산",
+          "country": "KR"
+        }
+      ],
+      "dest": null,
       "request": "GET /internal/v2/audit/001",
       "status": null,
       "thought": null,

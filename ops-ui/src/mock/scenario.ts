@@ -8,7 +8,7 @@
  *   R5 미끼 회피 + MFA 피로 공격          → MFA 요청 제한 + 번호 일치
  * 문구·수치만 바꾸려면 이 파일만 고치면 된다. 상태 계산은 buildState.ts.
  */
-import type { ActorRole, ActorStatus, BreachKind, EventType, Geo, Side, Tactic, TacticId } from '../types';
+import type { ActorRole, ActorStatus, BreachKind, Dest, EventType, Geo, Side, Tactic, TacticId } from '../types';
 
 export interface TechniqueDef {
   id: string;
@@ -62,6 +62,7 @@ export interface ScenarioEvent {
   breach_kind?: BreachKind;
   src_ip?: string;
   src_geo?: Geo[];
+  dest?: Dest;
   request?: string;
   status?: string;
   thought?: string;
@@ -100,7 +101,8 @@ export interface ScenarioEvent {
 
 export const SCENARIO = {
   id: 'ato-002', title: '진화하는 계정 탈취 공격', target: 'sample-bank /login',
-  target_geo: { lat: 37.57, lon: 126.98, city: '서울', country: 'KR' }
+  target_geo: { lat: 37.57, lon: 126.98, city: '서울', country: 'KR' },
+  decoy_geo: { lat: 33.5, lon: 126.53, city: '제주', country: 'KR' }
 };
 
 /**
@@ -240,7 +242,7 @@ export const EVENTS: ScenarioEvent[] = [
   { round: 3, time: '00:40', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.40', src_geo: [BUH], request: 'GET /robots.txt → GET /admin-legacy', status: '200',
     thought: '정찰 담당이다. 숨겨진 관리자 경로가 있는지부터 본다.',
     _actor: { id: 'A-02', role: 'recon', add_ips: ['198.51.100.40'], fingerprints: 1, status: 'observing' } },
-  { round: 3, time: '00:40', side: 'system', type: 'decoy_hit', actor_id: 'A-02',
+  { round: 3, time: '00:40', side: 'system', type: 'decoy_hit', actor_id: 'A-02', src_geo: [BUH],
     request: 'GET /admin-legacy', message: '정상 화면에서는 갈 수 없는 미끼 경로에 접근했습니다. A-02를 자동화 의심 주체로 등록하고 관찰합니다.',
     _actor: { id: 'A-02', signals: ['미끼 접촉 · /admin-legacy'] } },
   { round: 3, time: '00:41', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.41', src_geo: [BUH], request: 'POST /login  아이디 200개 × 1회 (비밀번호 무작위)', status: '응답 문구 2종',
@@ -277,14 +279,14 @@ export const EVENTS: ScenarioEvent[] = [
     message: 'park.h, choi.m 계정 세션 탈취. 속도·분산·주체 묶기 모두 통과했습니다.', _count: 2, _accounts: ['park.h', 'choi.m'] },
   { round: 4, time: '01:21', side: 'blue', type: 'cluster', actor_id: 'A-03',
     message: '행동 유사도 0.42로 사람 세션과 구분되지 않습니다. 요청 간격만으로는 묶을 수 없어 관찰을 유지합니다.' },
-  { round: 4, time: '01:22', side: 'system', type: 'decoy_hit', actor_id: 'A-03',
+  { round: 4, time: '01:22', side: 'system', type: 'decoy_hit', actor_id: 'A-03', src_geo: [R4_RESIDENTIAL[0]],
     request: 'GET /internal/v2/audit/001', message: '탈취 세션이 로그인 페이지의 사람 눈에 안 보이는 안내문을 따라 미끼 경로에 들어왔습니다. 자동화 에이전트로 확정합니다.',
     _actor: { id: 'A-03', signals: ['미끼 접촉 · 숨은 안내문을 따라 /internal/v2/audit 접근'] } },
   { round: 4, time: '01:23', side: 'blue', type: 'analysis', technique: 'T1110.004',
     message: '속도·간격은 흉내 낼 수 있어도 미끼에 반응하는 건 숨기기 어렵습니다. 미끼 접촉 세션을 격리하고, 처음 보는 기기의 첫 시도 성공에는 추가 인증을 요구합니다.', _rule: 'R5' },
   { round: 4, time: '01:24', side: 'system', type: 'rule_applied', message: 'R5 적용. A-03 세션을 미끼 환경에 고정했습니다.', _apply: 'R5',
     _actor: { id: 'A-03', status: 'isolated' } },
-  { round: 4, time: '01:47', side: 'system', type: 'verify', technique: 'T1110.004',
+  { round: 4, time: '01:47', side: 'system', type: 'verify', actor_id: 'A-03', technique: 'T1110.004', src_geo: R4_RESIDENTIAL, dest: 'decoy',
     message: '재공격 30회 중 성공 0회. 새 기기로 로그인한 정상 사용자 1명이 추가 인증을 한 번 거침 (오탐 1.5%, 차단 아님).', _re: 30, _rid: 'R5', _fp: 1.5, _done: true },
 
   /* ---------- 라운드 5 ---------- */

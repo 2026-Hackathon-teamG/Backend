@@ -18,7 +18,9 @@ export type RuleStatus = 'generated' | 'applied' | 'verified';
 export type RoundStatus = 'pending' | 'running' | 'verified';
 export type ActorRole = 'attack' | 'recon';
 export type ActorStatus = 'observing' | 'isolated';
-export type ControlAction = 'play' | 'next' | 'next_round' | 'end' | 'reset';
+/** real: 실서비스 / decoy: 미끼망(허니팟) */
+export type Dest = 'real' | 'decoy';
+export type ControlAction ='play' | 'next' | 'next_round' | 'end' | 'reset';
 
 /** 위치 (지구본용). IP 위치 조회 결과를 그대로 넣으면 된다 */
 export interface Geo {
@@ -33,8 +35,10 @@ export interface Scenario {
   id: string;
   title?: string;
   target?: string;
-  /** 공격 대상 서버 위치. 없으면 서울로 그린다 */
+  /** 실서비스(공격 대상 서버) 위치. 없으면 서울로 그린다 */
   target_geo?: Geo;
+  /** 미끼망(허니팟) 위치. 없으면 제주로 그린다 */
+  decoy_geo?: Geo;
 }
 
 export interface Kpi {
@@ -118,8 +122,10 @@ export interface RediEvent {
   technique?: string | null;
   breach_kind?: BreachKind | null;
   src_ip?: string | null;
-  /** 출발지 위치. 한 이벤트가 IP 여러 개로 나갔으면 여러 개 (없으면 지구본에 안 그림) */
+  /** 출발지 위치. 한 이벤트가 IP 여러 개로 나갔으면 여러 개. 없으면 src_ip를 해시해 가상 도시에 둔다 */
   src_geo?: Geo[] | null;
+  /** 요청이 간 곳. 없으면 decoy_hit만 미끼망, 나머지는 실서비스 */
+  dest?: Dest | null;
   request?: string | null;
   status?: string | null;
   /** 공격 AI의 판단 한 줄 */

@@ -183,6 +183,8 @@ button { font: inherit; color: inherit; }
   .origins-side { border-left: 0; border-top: 1px solid var(--line); }
 }
 .sw.recon { background: var(--violet); }
+.sw.decoy { background: var(--amber); }
+.sw.link { background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px); height: 2px; vertical-align: 3px; border-radius: 0; }
 #origins { display: flex; flex-direction: column; gap: 10px; }
 #origins .empty, #origins .more, #origins .note { margin: 0; font-size: 12px; color: var(--muted); }
 #origins .note { color: var(--dim); }
@@ -190,6 +192,7 @@ button { font: inherit; color: inherit; }
   display: flex; flex-direction: column; gap: 2px; padding: 10px 12px;
   border: 1px solid var(--red-line); border-radius: 8px; background: var(--red-soft);
 }
+.latest.decoy { border-color: var(--amber-line); background: var(--amber-soft); }
 .latest .k { font-size: 11.5px; color: var(--muted); }
 .latest b { font-size: 15px; }
 .latest .mono { font-size: 12px; color: var(--muted); }
@@ -201,15 +204,20 @@ button { font: inherit; color: inherit; }
 .countries .bar { height: 6px; border-radius: 3px; background: var(--win-2); overflow: hidden; }
 .countries .bar i { display: block; height: 100%; background: var(--red); border-radius: 3px; }
 .countries .n { text-align: right; font-size: 12px; }
-.globe-pin { pointer-events: none; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; }
+/* globe.gl이 요소 transform을 덮어쓰므로 크기 0인 기준점에 점·이름표를 절대 배치 */
+.globe-pin { pointer-events: none; width: 0; height: 0; position: relative; --c: var(--teal); --c-soft: rgba(69, 192, 207, .3); }
+.globe-pin.decoy { --c: var(--amber); --c-soft: rgba(233, 162, 59, .3); }
 .globe-pin i {
-  width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex: none;
-  box-shadow: 0 0 0 3px rgba(69, 192, 207, .25), 0 0 14px var(--teal);
+  position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: var(--c);
+  box-shadow: 0 0 0 3px var(--c-soft), 0 0 14px var(--c);
 }
 .globe-pin span {
-  font-size: 11.5px; font-weight: 600; color: var(--teal); white-space: nowrap;
-  background: rgba(10, 14, 13, .8); border: 1px solid rgba(69, 192, 207, .35); border-radius: 999px; padding: 1px 8px;
+  position: absolute; top: 0; transform: translateY(-50%); left: 12px;
+  font-size: 11.5px; font-weight: 600; color: var(--c); white-space: nowrap;
+  background: rgba(10, 14, 13, .8); border: 1px solid var(--c-soft); border-radius: 999px; padding: 1px 8px;
 }
+/* 두 마커가 가까워 이름표를 서로 반대쪽으로 */
+.globe-pin.decoy span { left: auto; right: 12px; }
 /* globe.gl 툴팁 */
 .float-tooltip-kap {
   font-family: var(--sans) !important; font-size: 12px !important; line-height: 1.5;
