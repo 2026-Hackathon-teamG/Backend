@@ -67,8 +67,9 @@ const DEFS: TechDef[] = [
   {
     id: 'T1190', name: '인증 우회 · 내부 헤더 위장',
     how: 'X-Internal-Request 헤더로 내부 요청인 척해 로그인 없이 고객 API를 호출합니다.',
-    why: '세션 없이 /api/v1/customers가 200을 받으면 우회 성공으로 봅니다. 격리된 주체는 같은 응답 형식의 미끼로 보냅니다.',
-    match: (e) => pathOf(e) === '/api/v1/customers' && !e.session_id,
+    why: 'X-Internal-Request 헤더로 /api/v1/customers가 200을 받으면 우회 성공으로 봅니다. 격리된 주체는 같은 응답 형식의 미끼로 보냅니다.',
+    // internal_header가 없는 이전 백엔드에서는 "세션 없는 호출"로 근사
+    match: (e) => pathOf(e) === '/api/v1/customers' && (e.internal_header ?? !e.session_id),
     trapped: isDecoy,
     real: (e) => !isDecoy(e) && ok(e),
   },

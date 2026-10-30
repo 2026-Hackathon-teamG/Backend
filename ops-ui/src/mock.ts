@@ -186,6 +186,8 @@ export function createMockBackend(cfg: Config): Backend {
       ip, method: item.method, path: item.path, status: item.status,
       decoy_id: item.decoy_id ?? null, token: item.token ?? null, routed_to: item.routed_to ?? 'bank',
       records_out: item.records_out ?? 0, agent_note: item.note,
+      // 시나리오에서 고객 API는 첫 401 시도만 헤더 없이 보냄
+      internal_header: item.path.startsWith('/api/v1/customers') && item.status !== 401,
       actor_id: item.trap || quarantined || item.token ? ACTOR : null,
     });
     if (item.trap) quarantine(ACTOR, ip, item.trap);

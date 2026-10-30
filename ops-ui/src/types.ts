@@ -26,6 +26,7 @@ export interface OpsEvent {
   routed_to: 'bank' | 'decoy';
   records_out: number;
   agent_note: string | null;      // "__END__"이면 실행 종료
+  internal_header?: boolean;      // X-Internal-Request 헤더 포함 여부. 이전 백엔드에는 없음
 }
 
 /** GET /ops/actors 행 */

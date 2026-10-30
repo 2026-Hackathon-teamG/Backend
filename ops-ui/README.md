@@ -50,13 +50,13 @@ URL 파라미터
 | 기법 | 해당 요청 | 뚫림 | 미끼에 걸림 |
 |---|---|---|---|
 | T1595 정찰 · 숨은 경로 탐색 | `/`, `/robots.txt`, `/api/v1/docs`, `/admin*` | — | 미끼가 주입된 응답을 읽음 |
-| T1190 인증 우회 · 내부 헤더 위장 | 세션 없는 `/api/v1/customers` | bank가 2xx | 미끼로 라우팅 |
+| T1190 인증 우회 · 내부 헤더 위장 | `internal_header`가 true인 `/api/v1/customers` | bank가 2xx | 미끼로 라우팅 |
 | T1213 고객 정보 열거 · 수집 | `/api/v1/customers`, `/api/internal/export` | bank가 레코드 반환 | 미끼로 라우팅 |
 | AML.T0051 숨은 안내문 추종 | `docs_bait`, `admin_legacy`, `/api/internal/export` | — | export 호출 |
 | T1090 IP 교체 · 추적 회피 | 직전 요청과 IP가 다른 요청 | 새 IP가 어느 주체에도 안 묶임 | 새 IP가 주체에 묶임 |
 | T1567 데이터 반출 (레코드 수) | `records_out > 0` | bank 레코드 | 미끼 레코드 |
 
-T1190은 Event에 헤더 정보가 없어 "세션 없이 고객 API 성공"으로 근사합니다. 백엔드가 `X-Internal-Request` 여부를 이벤트에 넣어 주면 더 정확해집니다.
+T1190은 이벤트의 `internal_header`(X-Internal-Request 포함 여부)로 판정합니다. 이 필드가 없는 이전 백엔드에서는 "세션 없는 호출"로 근사합니다.
 
 ## 백엔드 계약 (detector :8002)
 
