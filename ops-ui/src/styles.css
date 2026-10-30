@@ -168,6 +168,55 @@ button { font: inherit; color: inherit; }
 .kind.enumeration { background: var(--violet-soft); color: var(--violet); }
 .kind.mfa { background: var(--amber-soft); color: var(--amber); }
 
+/* ---------- 공격 출발지 지구본 ---------- */
+.globe-row { display: flex; flex-wrap: wrap; }
+.globe {
+  flex: 999 1 560px; min-width: 0; height: 440px; position: relative; overflow: hidden;
+  background: radial-gradient(ellipse at center, #13201C 0%, var(--win) 70%);
+  cursor: grab;
+}
+.globe:active { cursor: grabbing; }
+.globe .empty { color: var(--muted); font-size: 13px; padding: 20px; margin: 0; }
+.origins-side { flex: 1 1 320px; border-left: 1px solid var(--line); }
+@media (max-width: 900px) {
+  .globe { height: 340px; }
+  .origins-side { border-left: 0; border-top: 1px solid var(--line); }
+}
+.sw.recon { background: var(--violet); }
+#origins { display: flex; flex-direction: column; gap: 10px; }
+#origins .empty, #origins .more, #origins .note { margin: 0; font-size: 12px; color: var(--muted); }
+#origins .note { color: var(--dim); }
+.latest {
+  display: flex; flex-direction: column; gap: 2px; padding: 10px 12px;
+  border: 1px solid var(--red-line); border-radius: 8px; background: var(--red-soft);
+}
+.latest .k { font-size: 11.5px; color: var(--muted); }
+.latest b { font-size: 15px; }
+.latest .mono { font-size: 12px; color: var(--muted); }
+.countries { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.countries li { display: grid; grid-template-columns: 30px minmax(0, 1fr) 70px 24px; align-items: center; gap: 8px; font-size: 13px; }
+.countries .cc { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; text-align: center; padding: 1px 0; }
+.countries .cn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.countries .cn small { margin-left: 6px; color: var(--dim); font-size: 11.5px; }
+.countries .bar { height: 6px; border-radius: 3px; background: var(--win-2); overflow: hidden; }
+.countries .bar i { display: block; height: 100%; background: var(--red); border-radius: 3px; }
+.countries .n { text-align: right; font-size: 12px; }
+.globe-pin { pointer-events: none; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 6px; }
+.globe-pin i {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex: none;
+  box-shadow: 0 0 0 3px rgba(69, 192, 207, .25), 0 0 14px var(--teal);
+}
+.globe-pin span {
+  font-size: 11.5px; font-weight: 600; color: var(--teal); white-space: nowrap;
+  background: rgba(10, 14, 13, .8); border: 1px solid rgba(69, 192, 207, .35); border-radius: 999px; padding: 1px 8px;
+}
+/* globe.gl 툴팁 */
+.float-tooltip-kap {
+  font-family: var(--sans) !important; font-size: 12px !important; line-height: 1.5;
+  background: var(--bar) !important; color: var(--fg) !important;
+  border: 1px solid var(--line); border-radius: 6px !important; padding: 6px 10px !important;
+}
+
 /* ---------- 공격 주체 ---------- */
 .actors { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
 .actors .empty { color: var(--muted); font-size: 13px; }

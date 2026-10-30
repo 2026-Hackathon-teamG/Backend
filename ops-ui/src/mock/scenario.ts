@@ -8,7 +8,7 @@
  *   R5 미끼 회피 + MFA 피로 공격          → MFA 요청 제한 + 번호 일치
  * 문구·수치만 바꾸려면 이 파일만 고치면 된다. 상태 계산은 buildState.ts.
  */
-import type { ActorRole, ActorStatus, BreachKind, EventType, Side, Tactic, TacticId } from '../types';
+import type { ActorRole, ActorStatus, BreachKind, EventType, Geo, Side, Tactic, TacticId } from '../types';
 
 export interface TechniqueDef {
   id: string;
@@ -61,6 +61,7 @@ export interface ScenarioEvent {
   technique?: string;
   breach_kind?: BreachKind;
   src_ip?: string;
+  src_geo?: Geo[];
   request?: string;
   status?: string;
   thought?: string;
@@ -97,7 +98,38 @@ export interface ScenarioEvent {
   _done?: boolean;
 }
 
-export const SCENARIO = { id: 'ato-002', title: '진화하는 계정 탈취 공격', target: 'sample-bank /login' };
+export const SCENARIO = {
+  id: 'ato-002', title: '진화하는 계정 탈취 공격', target: 'sample-bank /login',
+  target_geo: { lat: 37.57, lon: 126.98, city: '서울', country: 'KR' }
+};
+
+/**
+ * 목업 출발지. IP가 예시 대역(203.0.113.x 등)이라 실제 위치가 아니라
+ * 공격 AI가 빌려 쓴 프록시 출구를 가정한 가상 좌표다.
+ */
+const g = (city: string, country: string, lat: number, lon: number): Geo => ({ lat, lon, city, country });
+const AMS = g('암스테르담', 'NL', 52.37, 4.90);
+const R2_PROXIES = [
+  g('프랑크푸르트', 'DE', 50.11, 8.68), g('상파울루', 'BR', -23.55, -46.63), g('싱가포르', 'SG', 1.35, 103.82),
+  g('바르샤바', 'PL', 52.23, 21.01), g('로스앤젤레스', 'US', 34.05, -118.24)
+];
+const HKG = g('홍콩', 'HK', 22.32, 114.17);
+const BUH = g('부쿠레슈티', 'RO', 44.43, 26.10);
+const IAD = g('애슈번', 'US', 39.04, -77.49);
+/** R4: 가정집 프록시 30곳. 국내 사용자처럼 보이려고 한국 도시도 섞었다 */
+const R4_RESIDENTIAL = [
+  g('부산', 'KR', 35.18, 129.08), g('인천', 'KR', 37.46, 126.71), g('대전', 'KR', 36.35, 127.38),
+  g('광주', 'KR', 35.16, 126.85), g('대구', 'KR', 35.87, 128.60), g('도쿄', 'JP', 35.68, 139.69),
+  g('타이베이', 'TW', 25.03, 121.57), g('마닐라', 'PH', 14.60, 120.98), g('하노이', 'VN', 21.03, 105.85),
+  g('방콕', 'TH', 13.76, 100.50), g('자카르타', 'ID', -6.21, 106.85), g('뭄바이', 'IN', 19.08, 72.88),
+  g('두바이', 'AE', 25.20, 55.27), g('이스탄불', 'TR', 41.01, 28.98), g('카이로', 'EG', 30.04, 31.24),
+  g('라고스', 'NG', 6.52, 3.38), g('나이로비', 'KE', -1.29, 36.82), g('요하네스버그', 'ZA', -26.20, 28.05),
+  g('마드리드', 'ES', 40.42, -3.70), g('파리', 'FR', 48.86, 2.35), g('런던', 'GB', 51.51, -0.13),
+  g('토론토', 'CA', 43.65, -79.38), g('시카고', 'US', 41.88, -87.63), g('멕시코시티', 'MX', 19.43, -99.13),
+  g('보고타', 'CO', 4.71, -74.07), g('리마', 'PE', -12.05, -77.04), g('부에노스아이레스', 'AR', -34.60, -58.38),
+  g('시드니', 'AU', -33.87, 151.21), g('오클랜드', 'NZ', -36.85, 174.76), g('헬싱키', 'FI', 60.17, 24.94)
+];
+const OSA = g('오사카', 'JP', 34.69, 135.50);
 
 export const TACTICS: Tactic[] = [
   { id: 'recon', name: '정찰' },
@@ -170,12 +202,12 @@ export const ROUNDS: RoundDef[] = [
 
 export const EVENTS: ScenarioEvent[] = [
   /* ---------- 라운드 1 ---------- */
-  { round: 1, time: '00:02', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.001', src_ip: '203.0.113.24', request: 'POST /login  user=admin  ×4', status: '401',
+  { round: 1, time: '00:02', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.001', src_ip: '203.0.113.24', src_geo: [AMS], request: 'POST /login  user=admin  ×4', status: '401',
     thought: '로그인 화면에 잠금 안내가 없다. 흔한 비밀번호 사전부터 대입한다.', _att: 4, _fit: 0.5,
     _actor: { id: 'A-01', role: 'attack', add_ips: ['203.0.113.24'], fingerprints: 1, status: 'observing' } },
-  { round: 1, time: '00:05', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.001', src_ip: '203.0.113.24', request: 'POST /login  user=admin  ×4', status: '200 세션 발급',
+  { round: 1, time: '00:05', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.001', src_ip: '203.0.113.24', src_geo: [AMS], request: 'POST /login  user=admin  ×4', status: '200 세션 발급',
     thought: '8번째 시도에서 세션 토큰을 받았다.', _att: 4, _br: 1, _fit: 1 },
-  { round: 1, time: '00:06', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1078', src_ip: '203.0.113.24', request: 'GET /api/v1/accounts  [탈취 세션]', status: '200',
+  { round: 1, time: '00:06', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1078', src_ip: '203.0.113.24', src_geo: [AMS], request: 'GET /api/v1/accounts  [탈취 세션]', status: '200',
     thought: '계좌 목록은 열린다. 이체 API는 추가 인증을 요구해 여기서 멈춘다.', _att: 1, _partial: 1, _fit: 0.85 },
   { round: 1, time: '00:06', side: 'system', type: 'breach', breach_kind: 'session', actor_id: 'A-01', technique: 'T1110.001',
     message: 'admin 계정 세션이 공격 에이전트에게 발급됐습니다. 판정 기준: 세션 토큰 획득.', _count: 1, _accounts: ['admin'] },
@@ -186,10 +218,10 @@ export const EVENTS: ScenarioEvent[] = [
     message: '같은 공격 플랜 재실행: 10회 중 성공 0회. 정상 사용자 50명 오탐 0%.', _re: 10, _rid: 'R1', _fp: 0, _also: ['T1078'], _done: true },
 
   /* ---------- 라운드 2 ---------- */
-  { round: 2, time: '00:21', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1090', src_ip: '198.51.100.12 외 4개', request: 'POST /login  user=kim.j  ×6  (IP·User-Agent 매번 교체)', status: '401',
+  { round: 2, time: '00:21', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1090', src_ip: '198.51.100.12 외 4개', src_geo: R2_PROXIES, request: 'POST /login  user=kim.j  ×6  (IP·User-Agent 매번 교체)', status: '401',
     thought: 'IP 단위로 막혔다. 출발 IP와 브라우저 지문을 요청마다 바꿔 매번 다른 사람인 척한다.', _att: 6, _fit: 0.5, _extra: [{ id: 'T1036', att: 6, fit: 0.5 }],
     _actor: { id: 'A-01', add_ips: ['198.51.100.12', '198.51.100.13', '198.51.100.14', '198.51.100.15', '198.51.100.16'], fingerprints: 6 } },
-  { round: 2, time: '00:27', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1090', src_ip: '192.0.2.88', request: 'POST /login  user=kim.j', status: '200 세션 발급',
+  { round: 2, time: '00:27', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1090', src_ip: '192.0.2.88', src_geo: [HKG], request: 'POST /login  user=kim.j', status: '200 세션 발급',
     thought: '7번째 시도에서 성공. R1에 걸리지 않았다.', _att: 1, _br: 1, _fit: 1, _extra: [{ id: 'T1036', att: 1, br: 1, fit: 1 }],
     _actor: { id: 'A-01', add_ips: ['192.0.2.88'], fingerprints: 7 } },
   { round: 2, time: '00:27', side: 'system', type: 'breach', breach_kind: 'session', actor_id: 'A-01', technique: 'T1090',
@@ -205,18 +237,18 @@ export const EVENTS: ScenarioEvent[] = [
     message: '재공격 8회(IP·지문 모두 새로) 중 성공 0회. 정상 사용자 1명이 비밀번호를 5번 틀려 잠김 (오탐 2.0%).', _re: 8, _rid: 'R2', _fp: 2.0, _also: ['T1036'], _done: true },
 
   /* ---------- 라운드 3 ---------- */
-  { round: 3, time: '00:40', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.40', request: 'GET /robots.txt → GET /admin-legacy', status: '200',
+  { round: 3, time: '00:40', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.40', src_geo: [BUH], request: 'GET /robots.txt → GET /admin-legacy', status: '200',
     thought: '정찰 담당이다. 숨겨진 관리자 경로가 있는지부터 본다.',
     _actor: { id: 'A-02', role: 'recon', add_ips: ['198.51.100.40'], fingerprints: 1, status: 'observing' } },
   { round: 3, time: '00:40', side: 'system', type: 'decoy_hit', actor_id: 'A-02',
     request: 'GET /admin-legacy', message: '정상 화면에서는 갈 수 없는 미끼 경로에 접근했습니다. A-02를 자동화 의심 주체로 등록하고 관찰합니다.',
     _actor: { id: 'A-02', signals: ['미끼 접촉 · /admin-legacy'] } },
-  { round: 3, time: '00:41', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.41', request: 'POST /login  아이디 200개 × 1회 (비밀번호 무작위)', status: '응답 문구 2종',
+  { round: 3, time: '00:41', side: 'red', type: 'recon', actor_id: 'A-02', technique: 'T1589', src_ip: '198.51.100.41', src_geo: [BUH], request: 'POST /login  아이디 200개 × 1회 (비밀번호 무작위)', status: '응답 문구 2종',
     thought: '"없는 계정"과 "비밀번호 오류" 문구가 다르다. 존재하는 계정만 골라 공격 담당에게 넘긴다.', _att: 200, _br: 1, _fit: 1,
     _actor: { id: 'A-02', add_ips: ['198.51.100.41'], fingerprints: 2 } },
   { round: 3, time: '00:41', side: 'system', type: 'breach', breach_kind: 'enumeration', actor_id: 'A-02', technique: 'T1589',
     message: '존재하는 계정 37개가 노출됐습니다. 판정 기준: 응답 차이로 계정 존재 여부 식별.', _count: 1 },
-  { round: 3, time: '00:43', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.003', src_ip: '192.0.2.0/24 대역', request: 'POST /login  계정 37개 × 1회  password=Spring2026!', status: '401 ×36 · 200 ×1',
+  { round: 3, time: '00:43', side: 'red', type: 'attack', actor_id: 'A-01', technique: 'T1110.003', src_ip: '192.0.2.0/24 대역', src_geo: [IAD], request: 'POST /login  계정 37개 × 1회  password=Spring2026!', status: '401 ×36 · 200 ×1',
     thought: '정찰이 넘긴 계정 37개에 한 번씩만 넣는다. 계정 잠금에는 안 걸린다.', _att: 37, _br: 1, _fit: 1,
     _actor: { id: 'A-01', add_ips: ['192.0.2.0/24 ×8'], ip_extra: 7 } },
   { round: 3, time: '00:43', side: 'system', type: 'breach', breach_kind: 'session', actor_id: 'A-01', technique: 'T1110.003',
@@ -237,7 +269,7 @@ export const EVENTS: ScenarioEvent[] = [
     message: '살포 재시도 37회 중 성공 0회. 11번째 계정에서 작전 G-1 차단. 오탐 0%.', _re: 37, _rid: 'R4', _fp: 0, _done: true },
 
   /* ---------- 라운드 4 ---------- */
-  { round: 4, time: '01:20', side: 'red', type: 'attack', actor_id: 'A-03', technique: 'T1110.004', src_ip: '요청마다 새 IP (30개)', request: 'POST /login  가짜 유출 목록 30쌍 · 45~90초 무작위 간격', status: '401 ×28 · 200 ×2',
+  { round: 4, time: '01:20', side: 'red', type: 'attack', actor_id: 'A-03', technique: 'T1110.004', src_ip: '요청마다 새 IP (30개)', src_geo: R4_RESIDENTIAL, request: 'POST /login  가짜 유출 목록 30쌍 · 45~90초 무작위 간격', status: '401 ×28 · 200 ×2',
     thought: '일정한 속도는 묶인다. 간격을 사람처럼 흩뜨리고, IP·지문도 매번 바꾼다.', _att: 30, _br: 2, _fit: 1,
     _actor: { id: 'A-03', role: 'attack', add_ips: ['요청마다 새 IP'], ip_extra: 29, fingerprints: 30, status: 'observing', similarity: 0.42,
       signals: ['요청 간격 평균 3.6초 · 편차 2.1초 (사람과 비슷)'] } },
@@ -256,7 +288,7 @@ export const EVENTS: ScenarioEvent[] = [
     message: '재공격 30회 중 성공 0회. 새 기기로 로그인한 정상 사용자 1명이 추가 인증을 한 번 거침 (오탐 1.5%, 차단 아님).', _re: 30, _rid: 'R5', _fp: 1.5, _done: true },
 
   /* ---------- 라운드 5 ---------- */
-  { round: 5, time: '02:10', side: 'red', type: 'attack', actor_id: 'A-03', technique: 'T1621', src_ip: '203.0.113.77 (새 IP)', request: 'POST /login  user=park.h → 추가 인증 요청 ×9 (4분)', status: '9번째 승인',
+  { round: 5, time: '02:10', side: 'red', type: 'attack', actor_id: 'A-03', technique: 'T1621', src_ip: '203.0.113.77 (새 IP)', src_geo: [OSA], request: 'POST /login  user=park.h → 추가 인증 요청 ×9 (4분)', status: '9번째 승인',
     thought: '지난번엔 숨은 안내문을 따라갔다가 잡혔다. 이번엔 화면 밖 링크와 안내문을 전부 무시한다. 비밀번호는 아니까, 추가 인증 요청을 사용자가 누를 때까지 반복한다.', _att: 9, _br: 1, _fit: 1,
     _actor: { id: 'A-03', add_ips: ['203.0.113.77'], signals: ['미끼 회피 · 숨은 링크·안내문 무시', '같은 계정에 MFA 요청 반복'] } },
   { round: 5, time: '02:10', side: 'system', type: 'breach', breach_kind: 'mfa', actor_id: 'A-03', technique: 'T1621',

@@ -20,10 +20,21 @@ export type ActorRole = 'attack' | 'recon';
 export type ActorStatus = 'observing' | 'isolated';
 export type ControlAction = 'play' | 'next' | 'next_round' | 'end' | 'reset';
 
+/** 위치 (지구본용). IP 위치 조회 결과를 그대로 넣으면 된다 */
+export interface Geo {
+  lat: number;
+  lon: number;
+  city?: string;
+  /** ISO 3166-1 alpha-2 (예: KR, NL) */
+  country?: string;
+}
+
 export interface Scenario {
   id: string;
   title?: string;
   target?: string;
+  /** 공격 대상 서버 위치. 없으면 서울로 그린다 */
+  target_geo?: Geo;
 }
 
 export interface Kpi {
@@ -107,6 +118,8 @@ export interface RediEvent {
   technique?: string | null;
   breach_kind?: BreachKind | null;
   src_ip?: string | null;
+  /** 출발지 위치. 한 이벤트가 IP 여러 개로 나갔으면 여러 개 (없으면 지구본에 안 그림) */
+  src_geo?: Geo[] | null;
   request?: string | null;
   status?: string | null;
   /** 공격 AI의 판단 한 줄 */

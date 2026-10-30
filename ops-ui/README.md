@@ -64,6 +64,9 @@ URL 파라미터가 가장 우선합니다: `?mode=mock`, `?mode=live&api=http:/
 
 - `GET /api/state` → **`src/types.ts`의 `DashboardState`** 모양 (예시: `stub/sample-state.json`, `stub/sample-state-round4-decoy.json`)
 - `POST /api/control` ← `{"action": "play" | "next" | "next_round" | "end" | "reset"}`
+- 지구본(`attack.origins`)은 선택 필드로 그립니다. 없으면 빈 지구본에 안내 문구만 나옵니다.
+  - `events[].src_geo`: `[{"lat", "lon", "city"?, "country"?}]` 출발지 목록 (IP 위치 조회 결과, 프록시 여러 개면 여러 개)
+  - `scenario.target_geo`: 공격 대상 서버 위치 (없으면 서울)
 
 연동 테스트용 스텁:
 ```bash
@@ -96,7 +99,7 @@ src/
   styles.css             스타일 (색상 토큰은 맨 위 :root)
   mock/scenario.ts       5라운드 시나리오 데이터 ← 문구·수치 수정은 여기
   mock/buildState.ts     이벤트 → 상태 계산
-  ui/                    화면 모듈 (header, techniques, actors, timeline, rulesRounds)
+  ui/                    화면 모듈 (header, globe, techniques, actors, timeline, rulesRounds)
 scripts/export-sample.ts 예시 응답 생성
 stub/                    백엔드 스텁 + 예시 응답
 ```
